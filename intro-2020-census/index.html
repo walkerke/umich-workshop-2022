@@ -1,0 +1,1718 @@
+<!DOCTYPE html>
+<html lang="" xml:lang="">
+  <head>
+    <title>Analyzing 2020 Census Data with R and tidycensus</title>
+    <meta charset="utf-8" />
+    <meta name="author" content="Kyle Walker" />
+    <meta name="date" content="2022-03-10" />
+    <script src="libs/header-attrs/header-attrs.js"></script>
+    <link rel="stylesheet" href="xaringan-themer.css" type="text/css" />
+  </head>
+  <body>
+    <textarea id="source">
+class: center, middle, inverse, title-slide
+
+# Analyzing 2020 Census Data with R and tidycensus
+## SSDAN Workshop Series
+### Kyle Walker
+### March 10, 2022
+
+---
+
+
+
+
+
+
+## About me
+
+.pull-left[
+
+* Associate Professor of Geography at TCU 
+
+* Spatial data science researcher and consultant
+
+* R package developer: __tidycensus__, __tigris__, __mapboxapi__
+
+* Book: [_Analyzing US Census Data: Methods, Maps and Models in R_](https://walker-data.com/census-r/)
+  - Available for free online right now;
+  - To be published in print with CRC Press in fall 2022
+
+]
+
+.pull-right[
+
+&lt;img src=img/photo.jpeg&gt;
+
+]
+
+---
+
+## SSDAN workshop series
+
+* Today: an introduction to 2020 US Census data
+
+* Next Friday (March 18): Mapping 2020 Census data
+
+* Friday, March 25: a first look at the 2016-2020 American Community Survey data with R and __tidycensus__
+
+---
+
+## Today's agenda
+
+* Hour 1: Getting started with 2020 Census data in __tidycensus__
+
+* Hour 2: Wrangling Census data with __tidyverse__ tools
+
+* Hour 3: Visualizing 2020 US Census data
+
+---
+class: middle, center, inverse
+
+## Part 1: Getting started with 2020 Census data in tidycensus
+
+---
+
+## Typical Census data workflows
+
+&lt;img src=img/spreadsheet.png style="width: 900px"&gt;
+
+---
+
+## The Census API
+
+* [The US Census __A__pplication __P__rogramming __Interface__ (API)](https://www.census.gov/data/developers/data-sets.html) allows developers to access Census data resources programmatically
+
+* R packages to interact with the APIs: censusapi, acs
+
+* Other languages: cenpy (Python), citySDK (JavaScript)
+
+---
+
+## tidycensus
+
+* R interface to the Decennial Census, American Community Survey, Population Estimates Program, and Public Use Microdata Series APIs
+
+* Key features: 
+  - Wrangles Census data internally to return tidyverse-ready format (or traditional wide format if requested);
+  
+  - Automatically downloads and merges Census geometries to data for mapping (next week's workshop!); 
+  
+  - Includes tools for handling margins of error in the ACS and working with survey weights in the ACS PUMS;
+  
+  - States and counties can be requested by name (no more looking up FIPS codes!)
+  
+---
+
+## Development of tidycensus
+
+* Mid-2010s: I started accumulating R scripts that did the same thing over and over (download Census data from the API, transform to tidy format, join to spatial data)
+
+* (Very) early implementation: [acs14lite](https://rpubs.com/walkerke/acs14lite)
+
+* 2017: first release of tidycensus following the implementation of a "tidy spatial data model" in the sf package
+
+* 2020: Matt Herman joins as co-author; support for ACS microdata (PUMS) in tidycensus
+
+---
+
+## Getting started with tidycensus
+
+* To get started, install the packages you'll need for today's workshop
+
+* If you are using the RStudio Cloud environment, these packages are already installed for you
+
+
+```r
+install.packages(c("tidycensus", "tidyverse"))
+```
+
+---
+
+## Your Census API key
+
+* To use tidycensus, you will need a Census API key.  Visit https://api.census.gov/data/key_signup.html to request a key, then activate the key from the link in your email.  
+
+* Once activated, use the `census_api_key()` function to set your key as an environment variable
+
+
+```r
+library(tidycensus)
+
+census_api_key("YOUR KEY GOES HERE", install = TRUE)
+```
+
+---
+class: middle, center, inverse
+
+## Basic usage of tidycensus
+
+---
+
+## 2020 Census data: what we have now
+
+* The currently available 2020 Census data come from the PL94-171 Redistricting Summary File, which is used for congressional apportionment &amp; redistricting
+
+* Variables available include total counts (population &amp; households), occupied / vacant housing units, total and voting-age population breakdowns by race &amp; ethnicity, and group quarters status
+
+* Later in 2022 (expected): the Demographic and Housing Characteristics summary files, which will include other variables typically included in the decennial Census data (age &amp; sex breakdowns, detailed race &amp; ethnicity)
+
+---
+
+## 2020 Census data in tidycensus
+
+* The `get_decennial()` function is used to acquire data from the decennial US Census
+
+* The two required arguments are `geography` and `variables` for the functions to work; for 2020 Census data, use `year = 2020`.  
+
+
+```r
+pop20 &lt;- get_decennial(
+  geography = "state",
+  variables = "P1_001N",
+  year = 2020
+)
+```
+
+---
+
+* Decennial Census data are returned with four columns: `GEOID`, `NAME`, `variable`, and `value`
+
+
+```r
+pop20
+```
+
+```
+## # A tibble: 52 × 4
+##    GEOID NAME                 variable    value
+##    &lt;chr&gt; &lt;chr&gt;                &lt;chr&gt;       &lt;dbl&gt;
+##  1 01    Alabama              P1_001N   5024279
+##  2 02    Alaska               P1_001N    733391
+##  3 04    Arizona              P1_001N   7151502
+##  4 05    Arkansas             P1_001N   3011524
+##  5 06    California           P1_001N  39538223
+##  6 08    Colorado             P1_001N   5773714
+##  7 09    Connecticut          P1_001N   3605944
+##  8 10    Delaware             P1_001N    989948
+##  9 11    District of Columbia P1_001N    689545
+## 10 16    Idaho                P1_001N   1839106
+## # … with 42 more rows
+```
+
+---
+
+## Understanding the printed messages
+
+* When we run `get_decennial()` for the 2020 Census for the first time, we see the following messages:
+
+```
+Getting data from the 2020 decennial Census
+Using the PL 94-171 Redistricting Data summary file
+Note: 2020 decennial Census data use differential privacy, a technique that
+introduces errors into data to preserve respondent confidentiality.
+ℹ Small counts should be interpreted with caution.
+ℹ See https://www.census.gov/library/fact-sheets/2021/protecting-the-confidentiality-of-the-2020-census-redistricting-data.html for additional guidance.
+This message is displayed once per session.
+```
+
+---
+
+## Understanding the printed messages
+
+* The Census Bureau is using _differential privacy_ in an attempt to preserve respondent confidentiality in the 2020 Census data, which is required under US Code Title 13
+
+* Intentional errors are introduced into data, impacting the accuracy of small area counts (e.g. some blocks with children, but no adults)
+
+* Advocates argue that differential privacy is necessary to satisfy Title 13 requirements given modern database reconstruction technologies; critics contend that the method makes data less useful with no tangible privacy benefit
+
+
+---
+
+## Requesting tables of variables
+
+* The `table` parameter can be used to obtain all related variables in a "table" at once
+
+
+```r
+table_p2 &lt;- get_decennial(
+  geography = "state", 
+* table = "P2",
+  year = 2020
+)
+```
+
+---
+
+
+```r
+table_p2
+```
+
+```
+## # A tibble: 3,796 × 4
+##    GEOID NAME                 variable    value
+##    &lt;chr&gt; &lt;chr&gt;                &lt;chr&gt;       &lt;dbl&gt;
+##  1 01    Alabama              P2_001N   5024279
+##  2 02    Alaska               P2_001N    733391
+##  3 04    Arizona              P2_001N   7151502
+##  4 05    Arkansas             P2_001N   3011524
+##  5 06    California           P2_001N  39538223
+##  6 08    Colorado             P2_001N   5773714
+##  7 09    Connecticut          P2_001N   3605944
+##  8 10    Delaware             P2_001N    989948
+##  9 11    District of Columbia P2_001N    689545
+## 10 16    Idaho                P2_001N   1839106
+## # … with 3,786 more rows
+```
+
+---
+class: middle, center, inverse
+
+## Understanding geography and variables in tidycensus
+
+---
+
+## US Census Geography
+
+&lt;img src=img/census_diagram.png style="width: 500px"&gt;
+
+.footnote[Source: [US Census Bureau](https://www2.census.gov/geo/pdfs/reference/geodiagram.pdf)]
+
+---
+
+## Geography in tidycensus
+
+* Information on available geographies, and how to specify them, can be found [in the tidycensus documentation](https://walker-data.com/tidycensus/articles/basic-usage.html#geography-in-tidycensus-1)
+
+&lt;img src=img/tidycensus_geographies.png style="width: 650px"&gt;
+
+
+---
+
+## Querying by state
+
+.pull-left[
+
+* For geographies available below the state level, the `state` parameter allows you to query data for a specific state
+
+* __tidycensus__ translates state names and postal abbreviations internally, so you don't need to remember the FIPS codes!
+
+* Example: data on the Hispanic population in Michigan by county
+
+]
+
+.pull-right[
+
+
+```r
+mi_hispanic &lt;- get_decennial(
+  geography = "county", 
+  variables = "P2_002N", 
+* state = "MI",
+  year = 2020
+)
+```
+
+]
+
+---
+
+
+```r
+mi_hispanic
+```
+
+```
+## # A tibble: 83 × 4
+##    GEOID NAME                     variable value
+##    &lt;chr&gt; &lt;chr&gt;                    &lt;chr&gt;    &lt;dbl&gt;
+##  1 26001 Alcona County, Michigan  P2_002N    122
+##  2 26003 Alger County, Michigan   P2_002N    115
+##  3 26005 Allegan County, Michigan P2_002N   9389
+##  4 26007 Alpena County, Michigan  P2_002N    417
+##  5 26009 Antrim County, Michigan  P2_002N    459
+##  6 26011 Arenac County, Michigan  P2_002N    270
+##  7 26013 Baraga County, Michigan  P2_002N    102
+##  8 26015 Barry County, Michigan   P2_002N   2142
+##  9 26017 Bay County, Michigan     P2_002N   5930
+## 10 26019 Benzie County, Michigan  P2_002N    391
+## # … with 73 more rows
+```
+
+
+
+---
+
+## Querying by state and county
+
+* County names are also translated internally by __tidycensus__ for sub-county queries, e.g. for Census tracts, block groups, and blocks
+
+
+```r
+washtenaw_hispanic &lt;- get_decennial(
+  geography = "tract", 
+  variables = "P2_002N", 
+  state = "MI", 
+* county = "Washtenaw",
+  year = 2020
+)
+```
+
+---
+
+
+```r
+washtenaw_hispanic
+```
+
+```
+## # A tibble: 107 × 4
+##    GEOID       NAME                                             variable value
+##    &lt;chr&gt;       &lt;chr&gt;                                            &lt;chr&gt;    &lt;dbl&gt;
+##  1 26161400100 Census Tract 4001, Washtenaw County, Michigan    P2_002N    108
+##  2 26161400300 Census Tract 4003, Washtenaw County, Michigan    P2_002N    271
+##  3 26161400400 Census Tract 4004, Washtenaw County, Michigan    P2_002N    144
+##  4 26161400500 Census Tract 4005, Washtenaw County, Michigan    P2_002N    457
+##  5 26161400600 Census Tract 4006, Washtenaw County, Michigan    P2_002N    358
+##  6 26161400700 Census Tract 4007, Washtenaw County, Michigan    P2_002N    121
+##  7 26161400800 Census Tract 4008, Washtenaw County, Michigan    P2_002N    264
+##  8 26161402100 Census Tract 4021, Washtenaw County, Michigan    P2_002N    200
+##  9 26161402201 Census Tract 4022.01, Washtenaw County, Michigan P2_002N    323
+## 10 26161402300 Census Tract 4023, Washtenaw County, Michigan    P2_002N     99
+## # … with 97 more rows
+```
+
+
+---
+
+## Searching for variables
+
+* To search for variables, use the `load_variables()` function along with a year and dataset
+
+* The `View()` function in RStudio allows for interactive browsing and filtering
+
+
+```r
+vars &lt;- load_variables(2020, "pl")
+
+View(vars)
+```
+
+---
+
+## Tables available in the 2020 Census PL file
+
+* H1: Occupancy status (by household)
+
+* P1: Race
+
+* P2: Race by Hispanic origin
+
+* P3: Race for the population 18+
+
+* P4: Race by Hispanic origin for the population 18+
+
+* P5: Group quarters status
+
+---
+class: middle, center, inverse
+
+## Data structure in tidycensus
+
+---
+
+## "Tidy" or long-form data
+
+.pull-left[
+
+* The default data structure returned by __tidycensus__ is "tidy" or long-form data, with variables by geography stacked by row
+
+]
+
+.pull-right[
+
+
+
+```r
+group_quarters &lt;- get_decennial(
+  geography = "state", 
+  table = "P5", 
+  year = 2020
+)
+```
+
+]
+
+---
+
+
+```r
+group_quarters
+```
+
+```
+## # A tibble: 520 × 4
+##    GEOID NAME                 variable  value
+##    &lt;chr&gt; &lt;chr&gt;                &lt;chr&gt;     &lt;dbl&gt;
+##  1 01    Alabama              P5_001N  127934
+##  2 02    Alaska               P5_001N   30291
+##  3 04    Arizona              P5_001N  160269
+##  4 05    Arkansas             P5_001N   82518
+##  5 06    California           P5_001N  917932
+##  6 08    Colorado             P5_001N  126848
+##  7 09    Connecticut          P5_001N  108002
+##  8 10    Delaware             P5_001N   22745
+##  9 11    District of Columbia P5_001N   40682
+## 10 16    Idaho                P5_001N   49729
+## # … with 510 more rows
+```
+
+
+---
+
+## "Wide" data 
+
+.pull-left[
+
+* The argument `output = "wide"` spreads Census variables across the columns, returning one row per geographic unit and one column per variable
+
+]
+
+.pull-right[
+
+
+```r
+group_quarters_wide &lt;- get_decennial(
+  geography = "state", 
+  table = "P5",
+  year = 2020,
+* output = "wide"
+)
+```
+
+]
+
+---
+
+
+```r
+group_quarters_wide
+```
+
+```
+## # A tibble: 52 × 12
+##    GEOID NAME    P5_001N P5_002N P5_003N P5_004N P5_005N P5_006N P5_007N P5_008N
+##    &lt;chr&gt; &lt;chr&gt;     &lt;dbl&gt;   &lt;dbl&gt;   &lt;dbl&gt;   &lt;dbl&gt;   &lt;dbl&gt;   &lt;dbl&gt;   &lt;dbl&gt;   &lt;dbl&gt;
+##  1 01    Alabama  127934   70648   39749    1479   27869    1551   57286   45489
+##  2 02    Alaska    30291    7177    4842     457    1781      97   23114    1472
+##  3 04    Arizona  160269   89904   64154    2331   21938    1481   70365   38945
+##  4 05    Arkans…   82518   48001   27079    1248   19266     408   34517   26887
+##  5 06    Califo…  917932  344896  201570    8966  124804    9556  573036  230361
+##  6 08    Colora…  126848   55851   32307    1525   21379     640   70997   38819
+##  7 09    Connec…  108002   38022   13581     910   22264    1267   69980   51718
+##  8 10    Delawa…   22745    9755    4801     114    4585     255   12990   11045
+##  9 11    Distri…   40682    5606    2278     315    2727     286   35076   23802
+## 10 16    Idaho     49729   21271   10931     570    8955     815   28458   22521
+## # … with 42 more rows, and 2 more variables: P5_009N &lt;dbl&gt;, P5_010N &lt;dbl&gt;
+```
+
+
+---
+
+## Using named vectors of variables
+
+.pull-left[
+
+* Census variables can be hard to remember; using a named vector to request variables will replace the Census IDs with a custom input
+
+* In long form, these custom inputs will populate the `variable` column; in wide form, they will replace the column names
+
+]
+
+.pull-right[
+
+
+
+```r
+vacancies_wide &lt;- get_decennial(
+  geography = "county",
+  state = "MI",
+* variables = c(vacant_households = "H1_003N",
+*               total_households = "H1_001N"),
+  output = "wide",
+  year = 2020
+)
+```
+
+]
+
+---
+
+
+```r
+vacancies_wide
+```
+
+```
+## # A tibble: 83 × 4
+##    GEOID NAME                     vacant_households total_households
+##    &lt;chr&gt; &lt;chr&gt;                                &lt;dbl&gt;            &lt;dbl&gt;
+##  1 26001 Alcona County, Michigan               5356            10263
+##  2 26003 Alger County, Michigan                2560             6169
+##  3 26005 Allegan County, Michigan              6244            51789
+##  4 26007 Alpena County, Michigan               2744            15645
+##  5 26009 Antrim County, Michigan               7391            17538
+##  6 26011 Arenac County, Michigan               2873             9504
+##  7 26013 Baraga County, Michigan               1724             5052
+##  8 26015 Barry County, Michigan                3275            27351
+##  9 26017 Bay County, Michigan                  3557            48562
+## 10 26019 Benzie County, Michigan               4346            12099
+## # … with 73 more rows
+```
+
+
+---
+
+## Part 1 exercises
+
+1. Review the available geographies in tidycensus from the tidycensus documentation.  Acquire data on total households (variable `H1_001N`) for a geography we have not yet used.  
+
+2. Use the `load_variables()` function to find a variable that interests you that we haven't used yet.  Use `get_decennial()` to fetch data from the 2020 Census for counties in a state of your choosing.
+
+---
+class: middle, center, inverse
+
+## Part 2: Wrangling Census data with tidyverse tools
+
+---
+
+## The tidyverse
+
+
+```r
+library(tidyverse)
+
+tidyverse_logo()
+```
+
+```
+## ⬢ __  _    __   .    ⬡           ⬢  . 
+##  / /_(_)__/ /_ ___  _____ _______ ___ 
+## / __/ / _  / // / |/ / -_) __(_-&lt;/ -_)
+## \__/_/\_,_/\_, /|___/\__/_/ /___/\__/ 
+##      ⬢  . /___/      ⬡      .       ⬢
+```
+
+* The [tidyverse](https://tidyverse.tidyverse.org/index.html): an integrated set of packages developed primarily by Hadley Wickham and the RStudio team
+
+---
+
+## tidycensus and the tidyverse
+
+* Census data are commonly used in _wide_ format, with categories spread across the columns
+
+* tidyverse tools work better with [data that are in "tidy", or _long_ format](https://vita.had.co.nz/papers/tidy-data.pdf); this format is returned by tidycensus by default
+
+* Goal: return data "ready to go" for use with tidyverse tools
+
+---
+class: middle, center, inverse
+
+## Exploring 2020 Census data with tidyverse tools
+
+---
+
+## Finding the largest values
+
+* dplyr's `arrange()` function sorts data based on values in one or more columns, and `filter()` helps you query data based on column values
+
+* Example: what are the largest and smallest counties in Texas by population?
+
+
+```r
+library(tidycensus)
+library(tidyverse)
+
+tx_population &lt;- get_decennial(
+  geography = "county",
+  variables = "P1_001N",
+  year = 2020,
+  state = "TX"
+)
+```
+
+---
+
+
+```r
+arrange(tx_population, value)
+```
+
+```
+## # A tibble: 254 × 4
+##    GEOID NAME                   variable value
+##    &lt;chr&gt; &lt;chr&gt;                  &lt;chr&gt;    &lt;dbl&gt;
+##  1 48301 Loving County, Texas   P1_001N     64
+##  2 48269 King County, Texas     P1_001N    265
+##  3 48261 Kenedy County, Texas   P1_001N    350
+##  4 48311 McMullen County, Texas P1_001N    600
+##  5 48033 Borden County, Texas   P1_001N    631
+##  6 48263 Kent County, Texas     P1_001N    753
+##  7 48443 Terrell County, Texas  P1_001N    760
+##  8 48393 Roberts County, Texas  P1_001N    827
+##  9 48345 Motley County, Texas   P1_001N   1063
+## 10 48155 Foard County, Texas    P1_001N   1095
+## # … with 244 more rows
+```
+
+---
+
+
+```r
+arrange(tx_population, desc(value))
+```
+
+```
+## # A tibble: 254 × 4
+##    GEOID NAME                    variable   value
+##    &lt;chr&gt; &lt;chr&gt;                   &lt;chr&gt;      &lt;dbl&gt;
+##  1 48201 Harris County, Texas    P1_001N  4731145
+##  2 48113 Dallas County, Texas    P1_001N  2613539
+##  3 48439 Tarrant County, Texas   P1_001N  2110640
+##  4 48029 Bexar County, Texas     P1_001N  2009324
+##  5 48453 Travis County, Texas    P1_001N  1290188
+##  6 48085 Collin County, Texas    P1_001N  1064465
+##  7 48121 Denton County, Texas    P1_001N   906422
+##  8 48215 Hidalgo County, Texas   P1_001N   870781
+##  9 48141 El Paso County, Texas   P1_001N   865657
+## 10 48157 Fort Bend County, Texas P1_001N   822779
+## # … with 244 more rows
+```
+
+---
+
+## What are the counties with a population below 1,000?
+
+* The `filter()` function subsets data according to a specified condition, much like a SQL query
+
+
+```r
+below1000 &lt;- filter(tx_population, value &lt; 1000)
+
+below1000
+```
+
+```
+## # A tibble: 8 × 4
+##   GEOID NAME                   variable value
+##   &lt;chr&gt; &lt;chr&gt;                  &lt;chr&gt;    &lt;dbl&gt;
+## 1 48393 Roberts County, Texas  P1_001N    827
+## 2 48033 Borden County, Texas   P1_001N    631
+## 3 48261 Kenedy County, Texas   P1_001N    350
+## 4 48263 Kent County, Texas     P1_001N    753
+## 5 48269 King County, Texas     P1_001N    265
+## 6 48301 Loving County, Texas   P1_001N     64
+## 7 48311 McMullen County, Texas P1_001N    600
+## 8 48443 Terrell County, Texas  P1_001N    760
+```
+---
+
+## Using summary variables
+
+* Many decennial Census and ACS variables are organized in tables in which the first variable represents a _summary variable_, or denominator for the others
+
+* The parameter `summary_var` can be used to generate a new column in long-form data for a requested denominator, which works well for normalizing estimates
+
+---
+
+## Using summary variables
+
+
+```r
+race_vars &lt;- c(
+  Hispanic = "P2_002N",
+  White = "P2_005N",
+  Black = "P2_006N",
+  Native = "P2_007N",
+  Asian = "P2_008N",
+  HIPI = "P2_009N"
+)
+
+az_race &lt;- get_decennial(
+  geography = "county",
+  state = "AZ",
+  variables = race_vars,
+  summary_var = "P2_001N",
+  year = 2020
+)
+```
+
+---
+
+
+```r
+az_race
+```
+
+```
+## # A tibble: 90 × 5
+##    GEOID NAME                     variable   value summary_value
+##    &lt;chr&gt; &lt;chr&gt;                    &lt;chr&gt;      &lt;dbl&gt;         &lt;dbl&gt;
+##  1 04001 Apache County, Arizona   Hispanic    3861         66021
+##  2 04003 Cochise County, Arizona  Hispanic   42615        125447
+##  3 04005 Coconino County, Arizona Hispanic   21719        145101
+##  4 04007 Gila County, Arizona     Hispanic    9283         53272
+##  5 04009 Graham County, Arizona   Hispanic   11428         38533
+##  6 04011 Greenlee County, Arizona Hispanic    4376          9563
+##  7 04012 La Paz County, Arizona   Hispanic    4197         16557
+##  8 04013 Maricopa County, Arizona Hispanic 1351415       4420568
+##  9 04015 Mohave County, Arizona   Hispanic   34126        213267
+## 10 04017 Navajo County, Arizona   Hispanic   10887        106717
+## # … with 80 more rows
+```
+
+---
+
+## Normalizing columns with `mutate()`
+
+* dplyr's `mutate()` function is used to calculate new columns in your data; the `select()` column can keep or drop columns by name
+
+* In a tidyverse workflow, these steps are commonly linked using the pipe operator (`%&gt;%`) from the magrittr package
+
+
+```r
+az_race_percent &lt;- az_race %&gt;%
+  mutate(percent = 100 * (value / summary_value)) %&gt;%
+  select(NAME, variable, percent)
+```
+
+
+---
+
+
+```r
+az_race_percent
+```
+
+```
+## # A tibble: 90 × 3
+##    NAME                     variable percent
+##    &lt;chr&gt;                    &lt;chr&gt;      &lt;dbl&gt;
+##  1 Apache County, Arizona   Hispanic    5.85
+##  2 Cochise County, Arizona  Hispanic   34.0 
+##  3 Coconino County, Arizona Hispanic   15.0 
+##  4 Gila County, Arizona     Hispanic   17.4 
+##  5 Graham County, Arizona   Hispanic   29.7 
+##  6 Greenlee County, Arizona Hispanic   45.8 
+##  7 La Paz County, Arizona   Hispanic   25.3 
+##  8 Maricopa County, Arizona Hispanic   30.6 
+##  9 Mohave County, Arizona   Hispanic   16.0 
+## 10 Navajo County, Arizona   Hispanic   10.2 
+## # … with 80 more rows
+```
+
+---
+class: middle, center, inverse
+
+## Group-wise Census data analysis
+
+---
+
+## Group-wise Census data analysis
+
+* The `group_by()` and `summarize()` functions in dplyr are used to implement the split-apply-combine method of data analysis
+
+* The default "tidy" format returned by tidycensus is designed to work well with group-wise Census data analysis workflows
+
+---
+
+## What is the largest group by county?
+
+
+```r
+largest_group &lt;- az_race_percent %&gt;%
+  group_by(NAME) %&gt;%
+  filter(percent == max(percent))
+```
+
+---
+
+
+```r
+largest_group
+```
+
+```
+## # A tibble: 15 × 3
+## # Groups:   NAME [15]
+##    NAME                       variable percent
+##    &lt;chr&gt;                      &lt;chr&gt;      &lt;dbl&gt;
+##  1 Santa Cruz County, Arizona Hispanic    83.1
+##  2 Yuma County, Arizona       Hispanic    63.8
+##  3 Cochise County, Arizona    White       54.4
+##  4 Coconino County, Arizona   White       53.0
+##  5 Gila County, Arizona       White       61.5
+##  6 Graham County, Arizona     White       52.9
+##  7 Greenlee County, Arizona   White       46.5
+##  8 La Paz County, Arizona     White       54.7
+##  9 Maricopa County, Arizona   White       53.3
+## 10 Mohave County, Arizona     White       75.1
+## 11 Pima County, Arizona       White       51.5
+## 12 Pinal County, Arizona      White       56.4
+## 13 Yavapai County, Arizona    White       77.6
+## 14 Apache County, Arizona     Native      70.4
+## 15 Navajo County, Arizona     Native      43.6
+```
+
+---
+
+## What are the median percentages by group?
+
+
+```r
+az_race_percent %&gt;%
+  group_by(variable) %&gt;%
+  summarize(median_pct = median(percent))
+```
+
+```
+## # A tibble: 6 × 2
+##   variable median_pct
+##   &lt;chr&gt;         &lt;dbl&gt;
+## 1 Asian         1.14 
+## 2 Black         0.967
+## 3 HIPI          0.114
+## 4 Hispanic     28.6  
+## 5 Native        2.88 
+## 6 White        53.0
+```
+
+---
+class: middle, center, inverse
+
+## Analyzing change since 2010
+
+---
+
+## How have areas changed since the 2010 Census?
+
+* A common use-case for the 2020 decennial Census data is to assess change over time
+
+* For example: which areas have experienced the most population growth, and which have experienced the steepest declines?
+
+* __tidycensus__ allows users to access the 2000 and 2010 decennial Census data for comparison, though variable IDs will differ
+
+---
+
+## Getting data from the 2010 Census
+
+
+```r
+county_pop_10 &lt;- get_decennial(
+  geography = "county",
+* variables = "P001001",
+* year = 2010
+)
+
+county_pop_10
+```
+
+```
+## # A tibble: 3,221 × 4
+##    GEOID NAME                        variable  value
+##    &lt;chr&gt; &lt;chr&gt;                       &lt;chr&gt;     &lt;dbl&gt;
+##  1 05131 Sebastian County, Arkansas  P001001  125744
+##  2 05133 Sevier County, Arkansas     P001001   17058
+##  3 05135 Sharp County, Arkansas      P001001   17264
+##  4 05137 Stone County, Arkansas      P001001   12394
+##  5 05139 Union County, Arkansas      P001001   41639
+##  6 05141 Van Buren County, Arkansas  P001001   17295
+##  7 05143 Washington County, Arkansas P001001  203065
+##  8 05145 White County, Arkansas      P001001   77076
+##  9 05149 Yell County, Arkansas       P001001   22185
+## 10 06011 Colusa County, California   P001001   21419
+## # … with 3,211 more rows
+```
+
+---
+
+## Cleanup before joining
+
+* The `select()` function can both subset datasets by column and rename columns, "cleaning up" a dataset before joining to another dataset
+
+
+```r
+county_pop_10_clean &lt;- county_pop_10 %&gt;%
+* select(GEOID, value10 = value)
+
+county_pop_10_clean
+```
+
+```
+## # A tibble: 3,221 × 2
+##    GEOID value10
+##    &lt;chr&gt;   &lt;dbl&gt;
+##  1 05131  125744
+##  2 05133   17058
+##  3 05135   17264
+##  4 05137   12394
+##  5 05139   41639
+##  6 05141   17295
+##  7 05143  203065
+##  8 05145   77076
+##  9 05149   22185
+## 10 06011   21419
+## # … with 3,211 more rows
+```
+
+---
+
+## Joining data
+
+* In __dplyr__, joins are implemented with the `*_join()` family of functions
+
+
+```r
+county_pop_20 &lt;- get_decennial(
+  geography = "county",
+  variables = "P1_001N",
+  year = 2020
+) %&gt;%
+  select(GEOID, NAME, value20 = value)
+
+county_joined &lt;- county_pop_20 %&gt;%
+* left_join(county_pop_10_clean, by = "GEOID")
+```
+
+---
+
+
+```r
+county_joined
+```
+
+```
+## # A tibble: 3,221 × 4
+##    GEOID NAME                    value20 value10
+##    &lt;chr&gt; &lt;chr&gt;                     &lt;dbl&gt;   &lt;dbl&gt;
+##  1 19013 Black Hawk County, Iowa  131144  131090
+##  2 19003 Adams County, Iowa         3704    4029
+##  3 19007 Appanoose County, Iowa    12317   12887
+##  4 19009 Audubon County, Iowa       5674    6119
+##  5 19015 Boone County, Iowa        26715   26306
+##  6 19019 Buchanan County, Iowa     20565   20958
+##  7 19023 Butler County, Iowa       14334   14867
+##  8 19025 Calhoun County, Iowa       9927    9670
+##  9 19029 Cass County, Iowa         13127   13956
+## 10 19031 Cedar County, Iowa        18505   18499
+## # … with 3,211 more rows
+```
+
+
+---
+
+## Calculating change
+
+* __dplyr__'s `mutate()` function can be used to calculate new columns, allowing for assessment of change over time
+
+
+```r
+county_change &lt;- county_joined %&gt;%
+* mutate(
+*   total_change = value20 - value10,
+*   percent_change = 100 * (total_change / value10)
+* )
+```
+
+---
+
+
+```r
+county_change
+```
+
+```
+## # A tibble: 3,221 × 6
+##    GEOID NAME                    value20 value10 total_change percent_change
+##    &lt;chr&gt; &lt;chr&gt;                     &lt;dbl&gt;   &lt;dbl&gt;        &lt;dbl&gt;          &lt;dbl&gt;
+##  1 19013 Black Hawk County, Iowa  131144  131090           54         0.0412
+##  2 19003 Adams County, Iowa         3704    4029         -325        -8.07  
+##  3 19007 Appanoose County, Iowa    12317   12887         -570        -4.42  
+##  4 19009 Audubon County, Iowa       5674    6119         -445        -7.27  
+##  5 19015 Boone County, Iowa        26715   26306          409         1.55  
+##  6 19019 Buchanan County, Iowa     20565   20958         -393        -1.88  
+##  7 19023 Butler County, Iowa       14334   14867         -533        -3.59  
+##  8 19025 Calhoun County, Iowa       9927    9670          257         2.66  
+##  9 19029 Cass County, Iowa         13127   13956         -829        -5.94  
+## 10 19031 Cedar County, Iowa        18505   18499            6         0.0324
+## # … with 3,211 more rows
+```
+
+
+---
+
+## Caveat: changing geographies!
+
+* County names and boundaries can change from year to year, introducing potential problems in time-series analysis
+
+* This is particularly acute for small geographies like Census tracts &amp; block groups, which we'll cover on March 25!
+
+
+```r
+filter(county_change, is.na(value10))
+```
+
+```
+## # A tibble: 4 × 6
+##   GEOID NAME                         value20 value10 total_change percent_change
+##   &lt;chr&gt; &lt;chr&gt;                          &lt;dbl&gt;   &lt;dbl&gt;        &lt;dbl&gt;          &lt;dbl&gt;
+## 1 02066 Copper River Census Area, A…    2617      NA           NA             NA
+## 2 02158 Kusilvak Census Area, Alaska    8368      NA           NA             NA
+## 3 46102 Oglala Lakota County, South…   13672      NA           NA             NA
+## 4 02063 Chugach Census Area, Alaska     7102      NA           NA             NA
+```
+
+
+---
+
+## Part 2 exercises
+
+With the `county_change` object, use __tidyverse__ tools to answer these questions:
+
+* Which counties gained and lost the most people during the 2010s?
+
+* How many counties in the US grew by 40 percent or more during the 2010s?
+
+* How many counties in the US lost 20 percent or more of their populations during the 2010s?
+
+---
+class: middle, center, inverse
+
+## Part 3: Visualizing US Census data
+
+---
+
+## Visualizing US Census data
+
+* __tidycensus__ is designed with ggplot2-based visualization in mind, the core framework for data visualization in the tidyverse
+
+* ggplot2 along with its extensions can be used for everything from simple graphics to complex interactive plots
+
+---
+
+## Data setup: Hispanic population by county in Georgia
+
+
+```r
+library(tidycensus)
+library(tidyverse)
+
+ga_hispanic &lt;- get_decennial(
+  geography = "county", 
+  variables = c(total = "P2_001N",
+                hispanic = "P2_002N"), 
+  state = "GA",
+  year = 2020,
+  output = "wide"
+) %&gt;%
+  mutate(percent = 100 * (hispanic / total))
+```
+
+---
+
+
+```r
+ga_hispanic
+```
+
+```
+## # A tibble: 159 × 5
+##    GEOID NAME                       total hispanic percent
+##    &lt;chr&gt; &lt;chr&gt;                      &lt;dbl&gt;    &lt;dbl&gt;   &lt;dbl&gt;
+##  1 13009 Baldwin County, Georgia    43799     1139    2.60
+##  2 13015 Bartow County, Georgia    108901    10751    9.87
+##  3 13019 Berrien County, Georgia    18160     1045    5.75
+##  4 13025 Brantley County, Georgia   18021      326    1.81
+##  5 13031 Bulloch County, Georgia    81099     4180    5.15
+##  6 13037 Calhoun County, Georgia     5573      149    2.67
+##  7 13043 Candler County, Georgia    10981     1378   12.5 
+##  8 13049 Charlton County, Georgia   12518     2036   16.3 
+##  9 13055 Chattooga County, Georgia  24965     1297    5.20
+## 10 13061 Clay County, Georgia        2848       41    1.44
+## # … with 149 more rows
+```
+
+---
+
+## Exploring data with visualization
+
+.pull-left[
+
+* Graphics in __ggplot2__ are initialized with the `ggplot()` function, in which a user typically supplies a dataset and aesthetic mapping with `aes()`
+
+* Graphical elements are then "layered" onto the ggplot object, consisting of a "geom", or geometric object (`geom_*()`) and custom styling elements linked with the `+` operator
+
+* Histograms can be created with `geom_histogram()`; the `bins` argument controls the number of bins on the plot
+
+]
+
+
+.pull-right[
+
+
+```r
+ggplot(ga_hispanic, aes(x = percent)) + 
+  geom_histogram(bins = 10)
+```
+
+![](index_files/figure-html/histogram-1.png)&lt;!-- --&gt;
+
+
+]
+
+---
+
+## Univariate visualization
+
+.pull-left[
+
+* Other univariate visualization methods in __ggplot2__ include `geom_boxplot()` for box and whisker plots, `geom_density()` for kernel density plots, and `geom_violin()` for violin plots
+
+]
+
+.pull-right[
+
+
+```r
+ggplot(ga_hispanic, aes(x = percent)) + 
+* geom_boxplot()
+```
+
+![](index_files/figure-html/boxplot-1.png)&lt;!-- --&gt;
+
+]
+
+---
+
+# Multivariate visualization
+
+.pull-left[
+
+* A second variable can be mapped to the second axis for visualization of multivariate relationships
+
+* A _scatterplot_ is commonly used to visualize the joint distributions of two quantitative variables, implemented with `geom_point()`.  
+
+]
+
+.pull-right[
+
+
+```r
+options(scipen = 999) # Disable scientific notation
+
+ggplot(ga_hispanic, aes(x = total, y = percent)) + 
+  geom_point()
+```
+
+![](index_files/figure-html/scatterplot-1.png)&lt;!-- --&gt;
+
+
+]
+
+---
+
+## Layering multiple geoms
+
+.pull-left[
+
+* Multiple geoms can be represented on the same plot by adding additional calls to `geom_*()` to the graphic's code
+
+* Shown here: a regression line superimposed over the scatterplot to show the linear relationship
+
+]
+
+.pull-right[
+
+
+```r
+ggplot(ga_hispanic, aes(x = total, y = percent)) + 
+  geom_point() + 
+* geom_smooth(method = "lm")
+```
+
+![](index_files/figure-html/scatterplot-with-lm-1.png)&lt;!-- --&gt;
+
+]
+
+
+
+---
+
+## Modifying axis scales
+
+.pull-left[
+
+* In many cases, the baseline populations of Census units will vary dramatically (counties in Georgia have populations ranging from 1500 to 1 million)
+
+* Changing a scale from linear to logarithmic can help with exploratory visualization when data is heavily skewed in this way
+
+]
+
+.pull-right[
+
+
+```r
+ggplot(ga_hispanic, aes(x = total, y = percent)) + 
+  geom_point() + 
+* scale_x_log10() +
+  geom_smooth()
+```
+
+![](index_files/figure-html/scatterplot-with-log-axis-1.png)&lt;!-- --&gt;
+
+
+]
+
+
+---
+class: middle, center, inverse
+
+# Customizing styling of Census plots with ggplot2
+
+---
+
+* Prompt: comparing vacant household percentages by county in a state
+
+
+```r
+nj_vacancies &lt;- get_decennial(
+  geography = "county",
+  variables = c(total_households = "H1_001N",
+                vacant_households = "H1_003N"),
+  state = "NJ",
+  year = 2020,
+  output = "wide"
+) %&gt;%
+  mutate(percent_vacant = 100 * (vacant_households / total_households))
+```
+
+---
+
+## Comparative plots
+
+* A categorical variable (rather than a numeric one) can be mapped to the second axis to compare Census data by category (e.g. by county)
+
+
+```r
+ggplot(nj_vacancies, aes(x = percent_vacant, y = NAME)) + 
+  geom_col()
+```
+
+---
+
+&lt;img src="img/first_bar.png" style="width: 800px"&gt;
+
+---
+
+## Improving your plot
+
+* In the code below, we format the axis tick labels with functions and apply custom labels to chart elements like the axis and plot titles
+
+
+```r
+library(scales)
+
+ggplot(nj_vacancies, aes(x = percent_vacant, y = reorder(NAME, percent_vacant))) +
+  geom_col() + 
+* scale_x_continuous(labels = label_percent(scale = 1)) +
+* scale_y_discrete(labels = function(y) str_remove(y, " County, New Jersey")) +
+* labs(x = "Percent vacant households",
+*      y = "",
+*      title = "Household vacancies by county in New Jersey",
+*      subtitle = "2020 decennial US Census")
+```
+
+
+---
+
+&lt;img src="img/second_bar.png" style="width: 800px"&gt;
+
+---
+
+## Styling your plot
+
+* Once you have settled on a general format, you can style the plot to your liking with fonts, colors and more!
+
+
+```r
+ggplot(nj_vacancies, aes(x = percent_vacant, y = reorder(NAME, percent_vacant))) +
+* geom_col(fill = "navy", color = "navy", alpha = 0.5) +
+* theme_minimal(base_family = "Verdana") +
+  scale_x_continuous(labels = label_percent(scale = 1)) + 
+  scale_y_discrete(labels = function(y) str_remove(y, " County, New Jersey")) + 
+  labs(x = "Percent vacant households",
+       y = "",
+       title = "Household vacancies by county in New Jersey",
+       subtitle = "2020 decennial US Census")
+```
+
+---
+
+&lt;img src="img/third_bar.png" style="width: 800px"&gt;
+
+---
+class: middle, center, inverse
+
+## Visualizing group-wise comparisons
+
+---
+
+* Prompt: how do the distributions of percentage Black population by Census tract vary among the five boroughs of New York City?
+
+
+```r
+nyc_percent_black &lt;- get_decennial(
+  geography = "tract",
+  variables = "P2_006N",
+  summary_var = "P2_001N",
+  state = "NY",
+  county = c("New York", "Kings",
+             "Queens", "Bronx",
+             "Richmond"),
+  year = 2020
+) %&gt;%
+  mutate(percent = 100 * (value / summary_value))
+```
+
+---
+
+
+```r
+nyc_percent_black
+```
+
+```
+## # A tibble: 2,327 × 6
+##    GEOID       NAME                         variable value summary_value percent
+##    &lt;chr&gt;       &lt;chr&gt;                        &lt;chr&gt;    &lt;dbl&gt;         &lt;dbl&gt;   &lt;dbl&gt;
+##  1 36047057300 Census Tract 573, Kings Cou… P2_006N     49          2590   1.89 
+##  2 36047057000 Census Tract 570, Kings Cou… P2_006N    257          3534   7.27 
+##  3 36047057100 Census Tract 571, Kings Cou… P2_006N     42          4267   0.984
+##  4 36047057200 Census Tract 572, Kings Cou… P2_006N   2585          5221  49.5  
+##  5 36047057400 Census Tract 574, Kings Cou… P2_006N     57          2560   2.23 
+##  6 36047057500 Census Tract 575, Kings Cou… P2_006N     76          4902   1.55 
+##  7 36047057600 Census Tract 576, Kings Cou… P2_006N     56          2912   1.92 
+##  8 36047057800 Census Tract 578, Kings Cou… P2_006N     74          3332   2.22 
+##  9 36047057901 Census Tract 579.01, Kings … P2_006N     70          1416   4.94 
+## 10 36047057902 Census Tract 579.02, Kings … P2_006N      0             0 NaN    
+## # … with 2,317 more rows
+```
+
+---
+
+## Separating columns
+
+* The `separate()` function splits values in a single column into multiple columns
+
+* This function can be used to parse the `NAME` column returned by __tidycensus__ to obtain tract, county, and state information
+
+
+```r
+nyc_percent_black2 &lt;- nyc_percent_black %&gt;%
+  separate(NAME, into = c("tract", "county", "state"),
+           sep = ", ")
+```
+
+---
+
+
+```r
+nyc_percent_black2
+```
+
+```
+## # A tibble: 2,327 × 8
+##    GEOID       tract        county   state  variable value summary_value percent
+##    &lt;chr&gt;       &lt;chr&gt;        &lt;chr&gt;    &lt;chr&gt;  &lt;chr&gt;    &lt;dbl&gt;         &lt;dbl&gt;   &lt;dbl&gt;
+##  1 36047057300 Census Trac… Kings C… New Y… P2_006N     49          2590   1.89 
+##  2 36047057000 Census Trac… Kings C… New Y… P2_006N    257          3534   7.27 
+##  3 36047057100 Census Trac… Kings C… New Y… P2_006N     42          4267   0.984
+##  4 36047057200 Census Trac… Kings C… New Y… P2_006N   2585          5221  49.5  
+##  5 36047057400 Census Trac… Kings C… New Y… P2_006N     57          2560   2.23 
+##  6 36047057500 Census Trac… Kings C… New Y… P2_006N     76          4902   1.55 
+##  7 36047057600 Census Trac… Kings C… New Y… P2_006N     56          2912   1.92 
+##  8 36047057800 Census Trac… Kings C… New Y… P2_006N     74          3332   2.22 
+##  9 36047057901 Census Trac… Kings C… New Y… P2_006N     70          1416   4.94 
+## 10 36047057902 Census Trac… Kings C… New Y… P2_006N      0             0 NaN    
+## # … with 2,317 more rows
+```
+
+
+
+---
+
+## Visualizing data by group
+
+.pull-left[
+
+* Mapping a categorical variable to the `fill` or `color` aesthetics (depending on the geom used) will draw one geom per category on the plot
+
+]
+
+.pull-right[
+
+
+```r
+ggplot(nyc_percent_black2, 
+       aes(x = percent, fill = county)) + 
+  geom_density(alpha = 0.3)
+```
+
+![](index_files/figure-html/overlapping-density-plots-1.png)&lt;!-- --&gt;
+
+
+]
+
+
+---
+
+## Faceted visualization
+
+* The `facet_wrap()` function splits plots into separate panels by category, creating "small multiples" visualizations that are excellent for making comparisons
+
+
+```r
+ggplot(nyc_percent_black2, aes(x = percent)) +
+  geom_density(fill = "darkgreen", color = "darkgreen", alpha = 0.5) + 
+  facet_wrap(~county) + #&gt;&gt;
+  scale_x_continuous(labels = function(x) paste0(x, "%")) + #&gt;&gt;
+  theme_minimal(base_size = 14) + #&gt;&gt;
+  theme(axis.text.y = element_blank()) + #&gt;&gt;
+  labs(x = "Percent Black", #&gt;&gt;
+       y = "", #&gt;&gt;
+       title = "Black population shares by Census tract, 2020") #&gt;&gt;
+```
+
+---
+
+&lt;img src=img/nyc_facets.png style="width: 800px"&gt;
+
+---
+
+## Ridgeline plots
+
+* The __ggridges__ package implements _ridgeline plots_, which visualize overlapping density plots among categories
+
+
+```r
+library(ggridges)
+
+ggplot(nyc_percent_black2, aes(x = percent, y = county)) + 
+  geom_density_ridges() + 
+  theme_ridges() + 
+  labs(x = "Percent Black, 2020 (by Census tract)", 
+       y = "") + 
+  scale_x_continuous(labels = scales::label_percent(scale = 1))
+```
+
+---
+
+&lt;img src=img/nyc_ridgeline.png style="width: 800px"&gt;
+
+---
+class: middle, center, inverse
+
+## Advanced example: geo-faceted plots
+
+---
+
+## ggplot2 extensions
+
+* [Highly customized Census data visualizations are possible with extensions to ggplot2](https://exts.ggplot2.tidyverse.org/gallery/)
+
+&lt;img src="img/extensions.png" style="width: 650px"&gt;
+
+---
+
+## Step 1: acquire data for all Census tracts in the US
+
+
+```r
+us_percent_white &lt;- map_dfr(c(state.abb, "DC"), function(state) {
+  get_decennial(
+    geography = "tract",
+    variables = "P2_005N",
+    summary_var = "P2_001N",
+    state = state,
+    year = 2020
+  ) %&gt;%
+    mutate(percent = 100 * (value / summary_value)) %&gt;%
+    separate(NAME, into = c("tract", "county", "state"),
+             sep = ", ")
+})
+```
+
+---
+
+## Step 2: build a geo-faceted plot
+
+
+```r
+library(geofacet)
+
+ggplot(us_percent_white, aes(x = percent)) + 
+  geom_histogram(fill = "navy", alpha = 0.8, bins = 30) + 
+  theme_minimal() + 
+  scale_fill_manual(values = c("darkred", "navy")) + 
+  facet_geo(~state, grid = "us_state_grid2",
+            label = "code", scales = "free_y") + 
+  theme(axis.text = element_blank(),
+        strip.text.x = element_text(size = 8)) + 
+  labs(x = "", 
+       y = "", 
+       title = "Non-Hispanic white population shares among Census tracts", 
+       fill = "", 
+       caption = "Data source: 2020 decennial US Census &amp; tidycensus R package\nX-axes range from 0% white (on the left) to 100% white (on the right).  Y-axes are unique to each state.")
+```
+
+---
+
+&lt;img src=img/geofacet.png style="width: 800px"&gt;
+
+---
+
+## Part 3 exercises
+
+* Choose one of the example charts and try customizing its appearance.  Some tips on styling are found at https://ggplot2.tidyverse.org/articles/ggplot2-specs.html.  
+
+* Try customizing the New Jersey vacancies example for a different variable (challenge: express it as an appropriate percentage!) and a different state.
+
+---
+class: middle, center, inverse
+
+## Thank you!
+    </textarea>
+<style data-target="print-only">@media screen {.remark-slide-container{display:block;}.remark-slide-scaler{box-shadow:none;}}</style>
+<script src="https://remarkjs.com/downloads/remark-latest.min.js"></script>
+<script>var slideshow = remark.create({
+"highlightStyle": "github",
+"highlightLines": true,
+"countIncrementalSlides": false,
+"ratio": "16:9"
+});
+if (window.HTMLWidgets) slideshow.on('afterShowSlide', function (slide) {
+  window.dispatchEvent(new Event('resize'));
+});
+(function(d) {
+  var s = d.createElement("style"), r = d.querySelector(".remark-slide-scaler");
+  if (!r) return;
+  s.type = "text/css"; s.innerHTML = "@page {size: " + r.style.width + " " + r.style.height +"; }";
+  d.head.appendChild(s);
+})(document);
+
+(function(d) {
+  var el = d.getElementsByClassName("remark-slides-area");
+  if (!el) return;
+  var slide, slides = slideshow.getSlides(), els = el[0].children;
+  for (var i = 1; i < slides.length; i++) {
+    slide = slides[i];
+    if (slide.properties.continued === "true" || slide.properties.count === "false") {
+      els[i - 1].className += ' has-continuation';
+    }
+  }
+  var s = d.createElement("style");
+  s.type = "text/css"; s.innerHTML = "@media print { .has-continuation { display: none; } }";
+  d.head.appendChild(s);
+})(document);
+// delete the temporary CSS (for displaying all slides initially) when the user
+// starts to view slides
+(function() {
+  var deleted = false;
+  slideshow.on('beforeShowSlide', function(slide) {
+    if (deleted) return;
+    var sheets = document.styleSheets, node;
+    for (var i = 0; i < sheets.length; i++) {
+      node = sheets[i].ownerNode;
+      if (node.dataset["target"] !== "print-only") continue;
+      node.parentNode.removeChild(node);
+    }
+    deleted = true;
+  });
+})();
+(function() {
+  "use strict"
+  // Replace <script> tags in slides area to make them executable
+  var scripts = document.querySelectorAll(
+    '.remark-slides-area .remark-slide-container script'
+  );
+  if (!scripts.length) return;
+  for (var i = 0; i < scripts.length; i++) {
+    var s = document.createElement('script');
+    var code = document.createTextNode(scripts[i].textContent);
+    s.appendChild(code);
+    var scriptAttrs = scripts[i].attributes;
+    for (var j = 0; j < scriptAttrs.length; j++) {
+      s.setAttribute(scriptAttrs[j].name, scriptAttrs[j].value);
+    }
+    scripts[i].parentElement.replaceChild(s, scripts[i]);
+  }
+})();
+(function() {
+  var links = document.getElementsByTagName('a');
+  for (var i = 0; i < links.length; i++) {
+    if (/^(https?:)?\/\//.test(links[i].getAttribute('href'))) {
+      links[i].target = '_blank';
+    }
+  }
+})();
+// adds .remark-code-has-line-highlighted class to <pre> parent elements
+// of code chunks containing highlighted lines with class .remark-code-line-highlighted
+(function(d) {
+  const hlines = d.querySelectorAll('.remark-code-line-highlighted');
+  const preParents = [];
+  const findPreParent = function(line, p = 0) {
+    if (p > 1) return null; // traverse up no further than grandparent
+    const el = line.parentElement;
+    return el.tagName === "PRE" ? el : findPreParent(el, ++p);
+  };
+
+  for (let line of hlines) {
+    let pre = findPreParent(line);
+    if (pre && !preParents.includes(pre)) preParents.push(pre);
+  }
+  preParents.forEach(p => p.classList.add("remark-code-has-line-highlighted"));
+})(document);</script>
+
+<script>
+slideshow._releaseMath = function(el) {
+  var i, text, code, codes = el.getElementsByTagName('code');
+  for (i = 0; i < codes.length;) {
+    code = codes[i];
+    if (code.parentNode.tagName !== 'PRE' && code.childElementCount === 0) {
+      text = code.textContent;
+      if (/^\\\((.|\s)+\\\)$/.test(text) || /^\\\[(.|\s)+\\\]$/.test(text) ||
+          /^\$\$(.|\s)+\$\$$/.test(text) ||
+          /^\\begin\{([^}]+)\}(.|\s)+\\end\{[^}]+\}$/.test(text)) {
+        code.outerHTML = code.innerHTML;  // remove <code></code>
+        continue;
+      }
+    }
+    i++;
+  }
+};
+slideshow._releaseMath(document);
+</script>
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+(function () {
+  var script = document.createElement('script');
+  script.type = 'text/javascript';
+  script.src  = 'https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-MML-AM_CHTML';
+  if (location.protocol !== 'file:' && /^https?:/.test(script.src))
+    script.src  = script.src.replace(/^https?:/, '');
+  document.getElementsByTagName('head')[0].appendChild(script);
+})();
+</script>
+  </body>
+</html>
