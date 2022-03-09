@@ -565,7 +565,7 @@ az_race <- get_decennial(
   geography = "county",
   state = "AZ",
   variables = race_vars,
-  summary_var = "P2_001N",
+  summary_var = "P2_001N", #<<
   year = 2020
 )
 ```
@@ -586,8 +586,8 @@ az_race
 
 ```{r mutate-and-select}
 az_race_percent <- az_race %>%
-  mutate(percent = 100 * (value / summary_value)) %>%
-  select(NAME, variable, percent)
+  mutate(percent = 100 * (value / summary_value)) %>% #<<
+  select(NAME, variable, percent) #<<
 ```
 
 
@@ -616,8 +616,8 @@ class: middle, center, inverse
 
 ```{r largest-group}
 largest_group <- az_race_percent %>%
-  group_by(NAME) %>%
-  filter(percent == max(percent))
+  group_by(NAME) %>% #<<
+  filter(percent == max(percent)) #<<
 ```
 
 ---
@@ -632,8 +632,8 @@ largest_group
 
 ```{r median-by-group}
 az_race_percent %>%
-  group_by(variable) %>%
-  summarize(median_pct = median(percent))
+  group_by(variable) %>% #<<
+  summarize(median_pct = median(percent)) #<<
 ```
 
 ---
@@ -1070,13 +1070,13 @@ ggplot(nyc_percent_black2,
 ```{r faceted-plots, eval = FALSE}
 ggplot(nyc_percent_black2, aes(x = percent)) +
   geom_density(fill = "darkgreen", color = "darkgreen", alpha = 0.5) + 
-  facet_wrap(~county) + #>>
-  scale_x_continuous(labels = function(x) paste0(x, "%")) + #>>
-  theme_minimal(base_size = 14) + #>>
-  theme(axis.text.y = element_blank()) + #>>
-  labs(x = "Percent Black", #>>
-       y = "", #>>
-       title = "Black population shares by Census tract, 2020") #>>
+  facet_wrap(~county) + #<<
+  scale_x_continuous(labels = function(x) paste0(x, "%")) + #<<
+  theme_minimal(base_size = 14) + #<<
+  theme(axis.text.y = element_blank()) + #<<
+  labs(x = "Percent Black", #<<
+       y = "", #<<
+       title = "Black population shares by Census tract, 2020") #<<
 ```
 
 ---
@@ -1093,8 +1093,8 @@ ggplot(nyc_percent_black2, aes(x = percent)) +
 library(ggridges)
 
 ggplot(nyc_percent_black2, aes(x = percent, y = county)) + 
-  geom_density_ridges() + 
-  theme_ridges() + 
+  geom_density_ridges() + #<< 
+  theme_ridges() + #<<
   labs(x = "Percent Black, 2020 (by Census tract)", 
        y = "") + 
   scale_x_continuous(labels = scales::label_percent(scale = 1))

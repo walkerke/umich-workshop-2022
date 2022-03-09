@@ -743,7 +743,7 @@ az_race &lt;- get_decennial(
   geography = "county",
   state = "AZ",
   variables = race_vars,
-  summary_var = "P2_001N",
+* summary_var = "P2_001N",
   year = 2020
 )
 ```
@@ -783,8 +783,8 @@ az_race
 
 ```r
 az_race_percent &lt;- az_race %&gt;%
-  mutate(percent = 100 * (value / summary_value)) %&gt;%
-  select(NAME, variable, percent)
+* mutate(percent = 100 * (value / summary_value)) %&gt;%
+* select(NAME, variable, percent)
 ```
 
 
@@ -832,8 +832,8 @@ class: middle, center, inverse
 
 ```r
 largest_group &lt;- az_race_percent %&gt;%
-  group_by(NAME) %&gt;%
-  filter(percent == max(percent))
+* group_by(NAME) %&gt;%
+* filter(percent == max(percent))
 ```
 
 ---
@@ -872,8 +872,8 @@ largest_group
 
 ```r
 az_race_percent %&gt;%
-  group_by(variable) %&gt;%
-  summarize(median_pct = median(percent))
+* group_by(variable) %&gt;%
+* summarize(median_pct = median(percent))
 ```
 
 ```
@@ -1433,18 +1433,18 @@ nyc_percent_black2
 
 ```
 ## # A tibble: 2,327 × 8
-##    GEOID       tract        county   state  variable value summary_value percent
-##    &lt;chr&gt;       &lt;chr&gt;        &lt;chr&gt;    &lt;chr&gt;  &lt;chr&gt;    &lt;dbl&gt;         &lt;dbl&gt;   &lt;dbl&gt;
-##  1 36047057300 Census Trac… Kings C… New Y… P2_006N     49          2590   1.89 
-##  2 36047057000 Census Trac… Kings C… New Y… P2_006N    257          3534   7.27 
-##  3 36047057100 Census Trac… Kings C… New Y… P2_006N     42          4267   0.984
-##  4 36047057200 Census Trac… Kings C… New Y… P2_006N   2585          5221  49.5  
-##  5 36047057400 Census Trac… Kings C… New Y… P2_006N     57          2560   2.23 
-##  6 36047057500 Census Trac… Kings C… New Y… P2_006N     76          4902   1.55 
-##  7 36047057600 Census Trac… Kings C… New Y… P2_006N     56          2912   1.92 
-##  8 36047057800 Census Trac… Kings C… New Y… P2_006N     74          3332   2.22 
-##  9 36047057901 Census Trac… Kings C… New Y… P2_006N     70          1416   4.94 
-## 10 36047057902 Census Trac… Kings C… New Y… P2_006N      0             0 NaN    
+##    GEOID       tract           county state variable value summary_value percent
+##    &lt;chr&gt;       &lt;chr&gt;           &lt;chr&gt;  &lt;chr&gt; &lt;chr&gt;    &lt;dbl&gt;         &lt;dbl&gt;   &lt;dbl&gt;
+##  1 36047057300 Census Tract 5… Kings… New … P2_006N     49          2590   1.89 
+##  2 36047057000 Census Tract 5… Kings… New … P2_006N    257          3534   7.27 
+##  3 36047057100 Census Tract 5… Kings… New … P2_006N     42          4267   0.984
+##  4 36047057200 Census Tract 5… Kings… New … P2_006N   2585          5221  49.5  
+##  5 36047057400 Census Tract 5… Kings… New … P2_006N     57          2560   2.23 
+##  6 36047057500 Census Tract 5… Kings… New … P2_006N     76          4902   1.55 
+##  7 36047057600 Census Tract 5… Kings… New … P2_006N     56          2912   1.92 
+##  8 36047057800 Census Tract 5… Kings… New … P2_006N     74          3332   2.22 
+##  9 36047057901 Census Tract 5… Kings… New … P2_006N     70          1416   4.94 
+## 10 36047057902 Census Tract 5… Kings… New … P2_006N      0             0 NaN    
 ## # … with 2,317 more rows
 ```
 
@@ -1485,13 +1485,13 @@ ggplot(nyc_percent_black2,
 ```r
 ggplot(nyc_percent_black2, aes(x = percent)) +
   geom_density(fill = "darkgreen", color = "darkgreen", alpha = 0.5) + 
-  facet_wrap(~county) + #&gt;&gt;
-  scale_x_continuous(labels = function(x) paste0(x, "%")) + #&gt;&gt;
-  theme_minimal(base_size = 14) + #&gt;&gt;
-  theme(axis.text.y = element_blank()) + #&gt;&gt;
-  labs(x = "Percent Black", #&gt;&gt;
-       y = "", #&gt;&gt;
-       title = "Black population shares by Census tract, 2020") #&gt;&gt;
+* facet_wrap(~county) +
+* scale_x_continuous(labels = function(x) paste0(x, "%")) +
+* theme_minimal(base_size = 14) +
+* theme(axis.text.y = element_blank()) +
+* labs(x = "Percent Black",
+*      y = "",
+*      title = "Black population shares by Census tract, 2020")
 ```
 
 ---
@@ -1509,8 +1509,8 @@ ggplot(nyc_percent_black2, aes(x = percent)) +
 library(ggridges)
 
 ggplot(nyc_percent_black2, aes(x = percent, y = county)) + 
-  geom_density_ridges() + 
-  theme_ridges() + 
+* geom_density_ridges() +
+* theme_ridges() +
   labs(x = "Percent Black, 2020 (by Census tract)", 
        y = "") + 
   scale_x_continuous(labels = scales::label_percent(scale = 1))
