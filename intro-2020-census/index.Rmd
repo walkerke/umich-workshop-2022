@@ -139,7 +139,7 @@ class: middle, center, inverse
 * If you are using the RStudio Cloud environment, these packages are already installed for you
 
 ```{r install-packages, eval = FALSE}
-install.packages(c("tidycensus", "tidyverse"))
+install.packages(c("tidycensus", "tidyverse", "geofacet", "ggridges"))
 ```
 
 ---

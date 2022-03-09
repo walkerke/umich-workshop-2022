@@ -1,5 +1,5 @@
 ## ----install-packages----------------------------------------------------
-## install.packages(c("tidycensus", "tidyverse"))
+## install.packages(c("tidycensus", "tidyverse", "geofacet", "ggridges"))
 
 
 ## ----api-key-------------------------------------------------------------
@@ -23,7 +23,7 @@ pop20
 ## ----census-table----------------------------------------------------------------------
 table_p2 <- get_decennial(
   geography = "state", 
-  table = "P2", #<<
+  table = "P2", 
   year = 2020
 )
 
@@ -36,7 +36,7 @@ table_p2
 mi_hispanic <- get_decennial(
   geography = "county", 
   variables = "P2_002N", 
-  state = "MI", #<<
+  state = "MI", 
   year = 2020
 )
 
@@ -50,7 +50,7 @@ washtenaw_hispanic <- get_decennial(
   geography = "tract", 
   variables = "P2_002N", 
   state = "MI", 
-  county = "Washtenaw", #<<
+  county = "Washtenaw", 
   year = 2020
 )
 
@@ -84,7 +84,7 @@ group_quarters_wide <- get_decennial(
   geography = "state", 
   table = "P5",
   year = 2020,
-  output = "wide" #<<
+  output = "wide" 
 )
 
 
@@ -96,8 +96,8 @@ group_quarters_wide
 vacancies_wide <- get_decennial(
   geography = "county",
   state = "MI",
-  variables = c(vacant_households = "H1_003N", #<<
-                total_households = "H1_001N"), #<<
+  variables = c(vacant_households = "H1_003N", 
+                total_households = "H1_001N"), 
   output = "wide",
   year = 2020
 )
@@ -193,8 +193,8 @@ az_race_percent %>%
 ## ----get-2010-data---------------------------------------------------------------------
 county_pop_10 <- get_decennial(
   geography = "county",
-  variables = "P001001", #<<
-  year = 2010 #<<
+  variables = "P001001", 
+  year = 2010 
 )
 
 county_pop_10
@@ -202,7 +202,7 @@ county_pop_10
 
 ## ----clean-2010-data-------------------------------------------------------------------
 county_pop_10_clean <- county_pop_10 %>%
-  select(GEOID, value10 = value) #<<
+  select(GEOID, value10 = value) 
 
 county_pop_10_clean
 
@@ -216,7 +216,7 @@ county_pop_20 <- get_decennial(
   select(GEOID, NAME, value20 = value)
 
 county_joined <- county_pop_20 %>%
-  left_join(county_pop_10_clean, by = "GEOID") #<<
+  left_join(county_pop_10_clean, by = "GEOID") 
 
 
 ## ----show-joined-data------------------------------------------------------------------
@@ -225,10 +225,10 @@ county_joined
 
 ## ----calculate-change------------------------------------------------------------------
 county_change <- county_joined %>%
-  mutate( #<<
-    total_change = value20 - value10, #<<
-    percent_change = 100 * (total_change / value10) #<<
-  ) #<<
+  mutate( 
+    total_change = value20 - value10, 
+    percent_change = 100 * (total_change / value10) 
+  ) 
 
 
 
@@ -266,7 +266,7 @@ ggplot(ga_hispanic, aes(x = percent)) +
 
 ## ----boxplot---------------------------------------------------------------------------
 ggplot(ga_hispanic, aes(x = percent)) + 
-  geom_boxplot() #<<
+  geom_boxplot() 
 
 
 ## ----scatterplot-----------------------------------------------------------------------
@@ -279,13 +279,13 @@ ggplot(ga_hispanic, aes(x = total, y = percent)) +
 ## ----scatterplot-with-lm---------------------------------------------------------------
 ggplot(ga_hispanic, aes(x = total, y = percent)) + 
   geom_point() + 
-  geom_smooth(method = "lm") #<<
+  geom_smooth(method = "lm") 
 
 
 ## ----scatterplot-with-log-axis---------------------------------------------------------
 ggplot(ga_hispanic, aes(x = total, y = percent)) + 
   geom_point() + 
-  scale_x_log10() + #<<
+  scale_x_log10() + 
   geom_smooth()
 
 
@@ -311,19 +311,19 @@ library(scales)
 
 ggplot(nj_vacancies, aes(x = percent_vacant, y = reorder(NAME, percent_vacant))) +
   geom_col() +
-  scale_x_continuous(labels = label_percent(scale = 1)) + #<<
-  scale_y_discrete(labels = function(y) str_remove(y, " County, New Jersey")) + #<<
-  labs(x = "Percent vacant households", #<<
-       y = "", #<<
-       title = "Household vacancies by county in New Jersey", #<<
-       subtitle = "2020 decennial US Census") #<<
+  scale_x_continuous(labels = label_percent(scale = 1)) + 
+  scale_y_discrete(labels = function(y) str_remove(y, " County, New Jersey")) + 
+  labs(x = "Percent vacant households", 
+       y = "", 
+       title = "Household vacancies by county in New Jersey", 
+       subtitle = "2020 decennial US Census") 
 
 
 
 ## ----third-bar-chart-----------------------------------------------------
 ggplot(nj_vacancies, aes(x = percent_vacant, y = reorder(NAME, percent_vacant))) +
-  geom_col(fill = "navy", color = "navy", alpha = 0.5) + #<<
-  theme_minimal(base_family = "Verdana") + #<<
+  geom_col(fill = "navy", color = "navy", alpha = 0.5) + 
+  theme_minimal(base_family = "Verdana") + 
   scale_x_continuous(labels = label_percent(scale = 1)) +
   scale_y_discrete(labels = function(y) str_remove(y, " County, New Jersey")) +
   labs(x = "Percent vacant households",
