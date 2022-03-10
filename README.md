@@ -3,6 +3,10 @@ Slides and code for Census data workshops given at the University of Michigan in
 
 This repository contains materials for a series of workshops on using Census data in R given for the University of Michigan's Social Science Data Analysis Network in March of 2022.  
 
+Workshop slides are available from the links below:
+
+* March 10. 2022: [Analyzing 2020 Census Data with R and tidycensus](https://walker-data.com/umich-workshop-2022/intro-2020-census/#1)
+
 
 To use the workshop materials, you should do one of the following: 
 
