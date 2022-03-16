@@ -4,6 +4,8 @@
 
 
 ## ----basic-usage-----------------------------------------------------------------------
+library(tigris)
+
 tx_counties <- counties(state = "TX")
 
 
