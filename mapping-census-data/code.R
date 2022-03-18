@@ -297,7 +297,7 @@ tm_shape(basemap) +
 ## ----interactive-tmap-1--------------------------------------------------
 tmap_mode("view")
 
-interactive1 <- tm_shape(hennepin_black) +
+tm_shape(hennepin_black) +
   tm_polygons(col = "percent",
           style = "quantile",
           n = 7,
@@ -327,6 +327,20 @@ tm_shape(hennepin_black) +
 
 ## ----mapview-1-----------------------------------------------------------
 mapview(hennepin_black, zcol = "percent")
+
+
+##----pop-density-----------------------------------------------------------
+tmap_mode("plot")
+
+library(crsuggest)
+# View the mi_crs object and pick a suitable CRS for the state
+mi_crs <- suggest_crs(mi_density)
+# Use that CRS for your map
+mi_density_map <- tm_shape(mi_density, projection = 6497) + 
+  tm_polygons(col = "density", style = "cont",
+              palette = "Blues", title = "People/km2")
+
+mi_density_map
 
 
 ## ----national-data---------------------------------------------------------------------
