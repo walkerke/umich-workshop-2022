@@ -17,7 +17,9 @@ To use the workshop materials, you should do one of the following:
 - Advanced users familiar with R and RStudio should clone the repository to their computers with the command `git clone https://github.com/walkerke/umich-workshop-2022.git`.  They should then install the following R packages, if not already installed:
 
 ```r
-pkgs <- c("tidycensus", "tidyverse", "ggridges", "geofacet")
+pkgs <- c("tidycensus", "tidyverse", "ggridges", "geofacet"
+"terra", "tmap", "mapview", "rosm", "crsuggest")
+
 install.packages(pkgs)
 ```
 

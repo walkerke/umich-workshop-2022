@@ -1,6 +1,6 @@
 ## ----install-packages----------------------------------------------------
 ## install.packages(c("tidycensus", "tidyverse", "terra",
-##                    "tmap", "mapview", "rosm"))
+##                    "tmap", "mapview", "rosm", "crsuggest"))
 
 
 ## ----basic-usage-----------------------------------------------------------------------
