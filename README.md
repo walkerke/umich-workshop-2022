@@ -7,6 +7,7 @@ Workshop slides are available from the links below:
 
 * March 10. 2022: [Analyzing 2020 Census Data with R and tidycensus](https://walker-data.com/umich-workshop-2022/intro-2020-census/#1)
 
+* March 18, 2022: [Mapping 2020 US Census Data in R]
 
 To use the workshop materials, you should do one of the following: 
 

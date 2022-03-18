@@ -91,7 +91,7 @@ style_xaringan(
 
 ```{r install-packages, eval = FALSE}
 install.packages(c("tidycensus", "tidyverse", "terra",
-                   "tmap", "mapview", "rosm"))
+                   "tmap", "mapview", "rosm", "crsuggest"))
 ```
 
 * Other required packages will be picked up as dependencies of these packages
@@ -945,7 +945,7 @@ class: middle, center, inverse
 ```{r interactive-tmap-1, eval = FALSE}
 tmap_mode("view")
 
-interactive1 <- tm_shape(hennepin_black) + 
+tm_shape(hennepin_black) + 
   tm_polygons(col = "percent",
           style = "quantile",
           n = 7,
@@ -1009,7 +1009,62 @@ class: middle, center, inverse
 
 ---
 
-## Coordinate reference systems
+## Mapping population density
+
+.pull-left[
+
+* When __tidycensus__ calls __tigris__ internally to get Census geometries, it dismisses all the information (besides the geometry) from the __tigris__ object by default
+
+* The argument `keep_geo_vars = TRUE` keeps the information from __tigris__, which includes a column, `ALAND` for land area in meters
+
+* This can be used to calculate and map population density
+
+]
+
+.pull-right[
+
+```{r}
+mi_density <- get_decennial(
+  geography = "county",
+  variables = "P1_001N",
+  state = "MI",
+  year = 2020,
+  geometry = TRUE, #<<
+  keep_geo_vars = TRUE #<<
+) %>%
+  mutate(density = 1000000 * (value / ALAND))
+```
+
+
+]
+
+---
+
+## Mapping population density
+
+* Maps of population density (and everything else, typically!) should aim to minimize distortion of areas
+
+* Solution: use a _projected coordinate reference system_
+
+```{r crsuggest}
+tmap_mode("plot")
+
+library(crsuggest)
+# View the mi_crs object and pick a suitable CRS for the state
+mi_crs <- suggest_crs(mi_density)
+# Use that CRS for your map
+mi_density_map <- tm_shape(mi_density, projection = 6497) + 
+  tm_polygons(col = "density", style = "cont",
+              palette = "Blues", title = "People/km2")
+```
+
+---
+
+```{r mi-density-map}
+mi_density_map
+```
+
+---
 
 ## The problem with national maps
 
@@ -1034,7 +1089,6 @@ us_percent_hispanic <- get_decennial(
 * As we'll see, mapping the entire US by default does not work well
 
 ```{r plot-national-map}
-tmap_mode("plot")
 
 national_map <- tm_shape(us_percent_hispanic) + 
   tm_polygons(col = "percent", palette = "plasma", 
