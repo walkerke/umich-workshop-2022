@@ -1,0 +1,1533 @@
+<!DOCTYPE html>
+<html lang="" xml:lang="">
+  <head>
+    <title>Using the new 2016-2020 ACS estimates in R</title>
+    <meta charset="utf-8" />
+    <meta name="author" content="Kyle Walker" />
+    <meta name="date" content="2022-03-25" />
+    <script src="libs/header-attrs/header-attrs.js"></script>
+    <link rel="stylesheet" href="xaringan-themer.css" type="text/css" />
+  </head>
+  <body>
+    <textarea id="source">
+class: center, middle, inverse, title-slide
+
+# Using the new 2016-2020 ACS estimates in R
+### Kyle Walker
+### March 25, 2022
+
+---
+
+
+
+
+
+
+## About me
+
+.pull-left[
+
+* Associate Professor of Geography at TCU 
+
+* Spatial data science researcher and consultant
+
+* R package developer: __tidycensus__, __tigris__, __mapboxapi__
+
+* Book: [_Analyzing US Census Data: Methods, Maps and Models in R_](https://walker-data.com/census-r/)
+  - Available for free online right now;
+  - To be published in print with CRC Press in fall 2022
+
+]
+
+.pull-right[
+
+&lt;img src=img/photo.jpeg&gt;
+
+]
+
+---
+
+## SSDAN workshop series
+
+* March 10: an introduction to 2020 US Census data
+  - [If you missed the workshop, view the slides here](https://walker-data.com/umich-workshop-2022/intro-2020-census/#1)
+
+* Last week: Mapping 2020 Census data
+  - [If you missed the workshop, view the slides here](https://walker-data.com/umich-workshop-2022/mapping-census-data/#1)
+
+* __Right now__: a first look at the 2016-2020 American Community Survey data with R and __tidycensus__
+
+---
+
+## Today's agenda
+
+* Hour 1: An overview of the 2016-2020 ACS data in R and __tidycensus__
+
+* Hour 2: Visualizing 2016-2020 ACS data
+
+* Hour 3: Advanced topics: margins of error &amp; time-series analysis
+
+---
+
+## General setup
+
+* Packages required for today's workshop:
+
+
+```r
+install.packages(c("tidycensus", "tidyverse", "mapview", "leafsync"))
+# For brand-new features:
+install.packages("remotes")
+remotes::install_github("walkerke/tidycensus")
+```
+
+* Other required packages will be picked up as dependencies of these packages
+
+* Or use the pre-built RStudio Cloud environment at https://rstudio.cloud/project/3705005
+
+---
+class: middle, center, inverse
+
+## Part 1: An overview of the 2016-2020 ACS data in R and __tidycensus__
+
+---
+
+## What is the American Community Survey (ACS)?
+
+* Annual survey of 3.5 million US households 
+
+* Covers topics not available in decennial US Census data (e.g. income, education, language, housing characteristics)
+
+* Available as 1-year estimates (for geographies of population 65,000 and greater) and 5-year estimates (for geographies down to the block group)
+  - 2020 1-year data only available as [experimental estimates](https://www.census.gov/programs-surveys/acs/data/experimental-data.html)
+
+* Data delivered as _estimates_ characterized by _margins of error_
+
+---
+
+## The __tidycensus__ R package
+
+* R interface to the Decennial Census, American Community Survey, Population Estimates Program, and Public Use Microdata Series APIs
+
+* Key features: 
+  - Wrangles Census data internally to return tidyverse-ready format (or traditional wide format if requested);
+  
+  - Automatically downloads and merges Census geometries to data for mapping; 
+  
+  - Includes tools for handling margins of error in the ACS and working with survey weights in the ACS PUMS;
+  
+  - States and counties can be requested by name (no more looking up FIPS codes!)
+
+---
+
+## ACS data in __tidycensus__
+
+* The `get_acs()` function in __tidycensus__ allows you to access ACS data from 2005 through 2020
+
+* Our focus today: the 2016-2020 ACS estimates, available with the argument `year = 2020`
+
+* Other required arguments: `geography`, for the level of aggregation, and `variables`, for one or more ACS variables
+
+* `get_acs()` defaults to the 5-year ACS with the argument `survey = "acs5"`; `survey = "acs1"` is used for 1-year ACS data
+
+---
+
+## Review: __tidycensus__ and the Census API
+
+* To use tidycensus, you will need a Census API key.  Visit https://api.census.gov/data/key_signup.html to request a key, then activate the key from the link in your email.  
+
+* Once activated, use the `census_api_key()` function to set your key as an environment variable
+
+
+```r
+library(tidycensus)
+
+census_api_key("YOUR KEY GOES HERE", install = TRUE)
+```
+
+---
+
+## Example: population born in Mexico by state
+
+
+```r
+library(tidycensus)
+
+born_in_mexico &lt;- get_acs(
+  geography = "state", 
+  variables = "B05006_150",
+* year = 2020
+)
+```
+
+---
+
+
+```r
+born_in_mexico
+```
+
+```
+## # A tibble: 52 × 5
+##    GEOID NAME                 variable   estimate   moe
+##    &lt;chr&gt; &lt;chr&gt;                &lt;chr&gt;         &lt;dbl&gt; &lt;dbl&gt;
+##  1 01    Alabama              B05006_150    46927  1846
+##  2 02    Alaska               B05006_150     4181   709
+##  3 04    Arizona              B05006_150   510639  8028
+##  4 05    Arkansas             B05006_150    60236  2182
+##  5 06    California           B05006_150  3962910 25353
+##  6 08    Colorado             B05006_150   215778  4888
+##  7 09    Connecticut          B05006_150    28086  2144
+##  8 10    Delaware             B05006_150    14616  1065
+##  9 11    District of Columbia B05006_150     4026   761
+## 10 12    Florida              B05006_150   257933  6418
+## # … with 42 more rows
+```
+
+---
+
+## Example: median age by state
+
+
+```r
+median_age &lt;- get_acs(
+  geography = "state",
+  variables = "B01002_001",
+* year = 2020
+)
+```
+
+---
+
+
+```r
+median_age
+```
+
+```
+## # A tibble: 52 × 5
+##    GEOID NAME                 variable   estimate   moe
+##    &lt;chr&gt; &lt;chr&gt;                &lt;chr&gt;         &lt;dbl&gt; &lt;dbl&gt;
+##  1 01    Alabama              B01002_001     39.2   0.1
+##  2 02    Alaska               B01002_001     34.6   0.2
+##  3 04    Arizona              B01002_001     37.9   0.2
+##  4 05    Arkansas             B01002_001     38.3   0.2
+##  5 06    California           B01002_001     36.7   0.1
+##  6 08    Colorado             B01002_001     36.9   0.1
+##  7 09    Connecticut          B01002_001     41.1   0.2
+##  8 10    Delaware             B01002_001     41     0.2
+##  9 11    District of Columbia B01002_001     34.1   0.1
+## 10 12    Florida              B01002_001     42.2   0.2
+## # … with 42 more rows
+```
+
+---
+
+## Understanding `get_acs()` output
+
+By default, ACS data are returned by `get_acs()` with the following five columns: 
+
+* `GEOID`: unique identifier for the Census geographic unit
+
+* `NAME`: A descriptive name for the geographic unit (e.g. a state name)
+
+* `variable`: the ACS variable ID 
+
+* `estimate`: The ACS estimate. Estimates are interpretated as _characteristics_ rather than true counts.  
+
+* `moe`: The margin of error associated with the estimate at a 90 percent confidence level.
+
+Using the argument `output = "wide"` will spread the estimates and MOEs across the columns of the dataset
+
+---
+
+## Geography and the ACS
+
+.pull-left[
+
+* The `geography` argument in `get_acs()` allows users to access data aggregated to varying levels of the Census hierarchy
+
+* Geographies should be formatted [as specified in the _Analyzing US Census Data_ book](https://walker-data.com/census-r/an-introduction-to-tidycensus.html#geography-and-variables-in-tidycensus)
+
+* ACS data available __starts at the block group__; not all variables are available for all geographies
+
+]
+
+.pull-right[
+
+&lt;img src=img/census_diagram.png&gt;
+
+]
+
+---
+
+## Example: geography aliases
+
+* The commonly-requested "metropolitan statistical area/micropolitan statistical area" and "zip code tabulation area" geographies can be aliased as "cbsa" and "zcta", respectively
+
+
+```r
+median_age_cbsa &lt;- get_acs(
+* geography = "cbsa",
+  variables = "B01002_001",
+  year = 2020
+)
+```
+
+---
+
+
+```r
+median_age_cbsa
+```
+
+```
+## # A tibble: 939 × 5
+##    GEOID NAME                             variable   estimate   moe
+##    &lt;chr&gt; &lt;chr&gt;                            &lt;chr&gt;         &lt;dbl&gt; &lt;dbl&gt;
+##  1 10100 Aberdeen, SD Micro Area          B01002_001     37.7   0.9
+##  2 10140 Aberdeen, WA Micro Area          B01002_001     44.3   0.3
+##  3 10180 Abilene, TX Metro Area           B01002_001     34.1   0.2
+##  4 10220 Ada, OK Micro Area               B01002_001     36     0.4
+##  5 10300 Adrian, MI Micro Area            B01002_001     42.1   0.4
+##  6 10380 Aguadilla-Isabela, PR Metro Area B01002_001     43.5   0.2
+##  7 10420 Akron, OH Metro Area             B01002_001     40.3   0.2
+##  8 10460 Alamogordo, NM Micro Area        B01002_001     36.2   0.3
+##  9 10500 Albany, GA Metro Area            B01002_001     37.3   0.4
+## 10 10540 Albany-Lebanon, OR Metro Area    B01002_001     39.9   0.4
+## # … with 929 more rows
+```
+
+---
+
+## Example: geographic subsets
+
+* Smaller geographies (e.g. tracts, block groups) are available by state and county using `state` and `county` arguments
+
+* Access with common names - no need for FIPS codes!
+
+
+```r
+washtenaw_median_age &lt;- get_acs(
+  geography = "block group",
+  variables = "B01002_001",
+* state = "MI",
+* county = "Washtenaw",
+  year = 2020
+)
+```
+
+---
+
+
+```r
+washtenaw_median_age
+```
+
+```
+## # A tibble: 308 × 5
+##    GEOID        NAME                                     variable estimate   moe
+##    &lt;chr&gt;        &lt;chr&gt;                                    &lt;chr&gt;       &lt;dbl&gt; &lt;dbl&gt;
+##  1 261614001001 Block Group 1, Census Tract 4001, Washt… B01002_…     30.9   4.4
+##  2 261614001002 Block Group 2, Census Tract 4001, Washt… B01002_…     21.8   0.7
+##  3 261614003001 Block Group 1, Census Tract 4003, Washt… B01002_…     21.5   0.5
+##  4 261614003002 Block Group 2, Census Tract 4003, Washt… B01002_…     21.6   0.7
+##  5 261614003003 Block Group 3, Census Tract 4003, Washt… B01002_…     21.1   0.4
+##  6 261614004001 Block Group 1, Census Tract 4004, Washt… B01002_…     35    11.7
+##  7 261614004002 Block Group 2, Census Tract 4004, Washt… B01002_…     23.7   3  
+##  8 261614004003 Block Group 3, Census Tract 4004, Washt… B01002_…     50.2  10  
+##  9 261614005001 Block Group 1, Census Tract 4005, Washt… B01002_…     NA    NA  
+## 10 261614005002 Block Group 2, Census Tract 4005, Washt… B01002_…     21.6   0.7
+## # … with 298 more rows
+```
+
+
+---
+
+## Variables and datasets in the 5-year ACS
+
+* The ACS Detailed Tables, Data Profile, and Subject Tables are available with `get_acs()`; __tidycensus__ will auto-detect the dataset from the variable name and fetch from the appropriate location
+
+* To look up variable IDs from a dataset, use: 
+  - Detailed Tables: `load_variables(2020, "acs5")`
+  - Data Profile: `load_variables(2020, "acs5/profile")`
+  - Subject Tables: `load_variables(2020, "acs5/subject")`
+  - Comparison Profile: `load_variables(2020, "acs5/cprofile")` (GitHub only)
+
+* __New__: The `geography` column tells you the smallest geography at which a variable is available; the Data Profile and Subject tables are available at the tract and up, and the Comparison Profile is available at the county and up
+
+---
+class: middle, center, inverse
+
+## Analyzing 2016-2020 ACS data
+
+---
+
+## Viewing ACS data
+
+* Basic analysis of data in RStudio can be accomplished with the interactive table generated by `View()` (or Ctrl+click on the data object in your script)
+
+* Example: median home value by county in the 2016-2020 ACS
+
+
+```r
+median_home_value &lt;- get_acs(
+  geography = "county",
+  variables = "B25077_001",
+  year = 2020
+)
+```
+
+---
+
+## Exploring data with the tidyverse
+
+* ACS data returned by __tidycensus__ are designed for analysis with __tidyverse__ packages like __dplyr__ 
+
+* [Basic examples covered in the first workshop will work for ACS data as well](https://walker-data.com/umich-workshop-2022/intro-2020-census/#42)
+
+* Example question: which counties are in the top 10 percent nationally for median home values, and how does this break down by state?
+
+---
+
+## Step 1: extract the top 10 percent
+
+
+```r
+library(tidyverse)
+
+top10percent &lt;- median_home_value %&gt;%
+* mutate(percentile = percent_rank(estimate)) %&gt;%
+* filter(percentile &gt;= 0.9)
+```
+
+---
+
+
+```r
+top10percent
+```
+
+```
+## # A tibble: 321 × 6
+##    GEOID NAME                               variable   estimate   moe percentile
+##    &lt;chr&gt; &lt;chr&gt;                              &lt;chr&gt;         &lt;dbl&gt; &lt;dbl&gt;      &lt;dbl&gt;
+##  1 02016 Aleutians West Census Area, Alaska B25077_001   316700 61170      0.943
+##  2 02020 Anchorage Municipality, Alaska     B25077_001   320100  4445      0.945
+##  3 02100 Haines Borough, Alaska             B25077_001   263900 41626      0.902
+##  4 02110 Juneau City and Borough, Alaska    B25077_001   355100 11524      0.959
+##  5 02130 Ketchikan Gateway Borough, Alaska  B25077_001   299500 12386      0.933
+##  6 02150 Kodiak Island Borough, Alaska      B25077_001   295100 22848      0.931
+##  7 02220 Sitka City and Borough, Alaska     B25077_001   365800 18682      0.963
+##  8 02230 Skagway Municipality, Alaska       B25077_001   397200 38489      0.973
+##  9 04005 Coconino County, Arizona           B25077_001   299100 10357      0.933
+## 10 04013 Maricopa County, Arizona           B25077_001   278700  1401      0.915
+## # … with 311 more rows
+```
+
+---
+
+## Step 2: extract state information from the `NAME` column
+
+* The `separate()` function splits a column into multiple columns based on a separator; useful for parsing the `NAME` column returned by __tidycensus__
+
+
+```r
+top10percent &lt;- top10percent %&gt;%
+* separate(
+*   NAME,
+*   into = c("county", "state"),
+*   sep = ", "
+* )
+```
+
+---
+
+
+```r
+top10percent
+```
+
+```
+## # A tibble: 321 × 7
+##    GEOID county                     state   variable   estimate   moe percentile
+##    &lt;chr&gt; &lt;chr&gt;                      &lt;chr&gt;   &lt;chr&gt;         &lt;dbl&gt; &lt;dbl&gt;      &lt;dbl&gt;
+##  1 02016 Aleutians West Census Area Alaska  B25077_001   316700 61170      0.943
+##  2 02020 Anchorage Municipality     Alaska  B25077_001   320100  4445      0.945
+##  3 02100 Haines Borough             Alaska  B25077_001   263900 41626      0.902
+##  4 02110 Juneau City and Borough    Alaska  B25077_001   355100 11524      0.959
+##  5 02130 Ketchikan Gateway Borough  Alaska  B25077_001   299500 12386      0.933
+##  6 02150 Kodiak Island Borough      Alaska  B25077_001   295100 22848      0.931
+##  7 02220 Sitka City and Borough     Alaska  B25077_001   365800 18682      0.963
+##  8 02230 Skagway Municipality       Alaska  B25077_001   397200 38489      0.973
+##  9 04005 Coconino County            Arizona B25077_001   299100 10357      0.933
+## 10 04013 Maricopa County            Arizona B25077_001   278700  1401      0.915
+## # … with 311 more rows
+```
+
+---
+
+## Step 3: group by `state` and summarize
+
+
+```r
+state_summary &lt;- top10percent %&gt;%
+* group_by(state) %&gt;%
+* summarize(n = n()) %&gt;%
+* arrange(desc(n))
+```
+
+---
+
+
+```r
+state_summary
+```
+
+```
+## # A tibble: 42 × 2
+##    state             n
+##    &lt;chr&gt;         &lt;int&gt;
+##  1 California       43
+##  2 Virginia         36
+##  3 Colorado         30
+##  4 Oregon           19
+##  5 Washington       17
+##  6 New Jersey       15
+##  7 Maryland         14
+##  8 New York         13
+##  9 Massachusetts    11
+## 10 Texas            11
+## # … with 32 more rows
+```
+
+---
+
+## Part 1 exercises
+
+1. Use `load_variables()` to browse the available variables in the 2016-2020 ACS.  Find a variable that interests you and try reproducing one of the examples in this section with that variable. 
+
+2. Use the __tidyverse__ functions covered in this section to explore that variable for all counties in the US.  Which counties have the largest estimate for your variable?  Which have the smallest?
+
+---
+class: middle, center, inverse
+
+## Part 2: Visualizing 2016-2020 ACS Data
+
+---
+
+## Visualization in our workshops: an overview
+
+* In the first workshop, [we covered a range of methods using __ggplot2__ to visualize decennial US Census data](https://walker-data.com/umich-workshop-2022/intro-2020-census/#65)
+
+* The second workshop focused on [cartography, largely with the __tmap__ package](https://walker-data.com/umich-workshop-2022/mapping-census-data/#30)
+
+* Those methods will work for ACS data as well; we'll re-visit some of the basics here and introduce some new visualization methods with a focus on __ggplot2__
+
+---
+
+## __ggplot2__: a review
+
+.pull-left[
+
+* Graphics in __ggplot2__ are initialized with the `ggplot()` function, in which a user typically supplies a dataset and aesthetic mapping with `aes()`
+
+* Graphical elements are then "layered" onto the ggplot object, consisting of a "geom", or geometric object (`geom_*()`) and custom styling elements linked with the `+` operator
+
+* Example: a histogram of county median home values generated with `geom_histogram()`
+
+]
+
+
+.pull-right[
+
+
+```r
+library(tidyverse)
+library(scales)
+
+ggplot(median_home_value, aes(x = estimate)) + 
+  geom_histogram(bins = 30) + 
+  scale_x_continuous(labels = label_dollar())
+```
+
+![](index_files/figure-html/histogram-1.png)&lt;!-- --&gt;
+
+
+]
+
+---
+class: middle, center, inverse
+
+## Example #1: visualizing margins of error
+
+---
+
+## Visualizing ACS estimates
+
+* As opposed to decennial US Census data, ACS estimates include information on uncertainty, represented by the _margin of error_ in the `moe` column
+
+* This means that in some cases, visualization of estimates without reference to the margin of error can be misleading
+
+* Example: a sorted bar chart ([drawing from an example in the first workshop](https://walker-data.com/umich-workshop-2022/intro-2020-census/#79))
+
+---
+
+## Visualizing ACS estimates
+
+.pull-left[
+
+* Data on median household income by county can be readily acquired...
+
+
+```r
+nj_income &lt;- get_acs(
+  geography = "county",
+  variables = "B19013_001",
+  state = "NJ",
+  year = 2020
+) %&gt;%
+  mutate(NAME = str_remove(NAME, 
+                           " County, New Jersey"))
+```
+
+
+]
+
+--
+
+.pull-right[
+
+* ...and visualized comparatively with __ggplot2__
+
+
+```r
+nj_income_bar &lt;- ggplot(nj_income, 
+       aes(x = estimate, 
+           y = reorder(NAME, estimate))) + 
+  geom_col() + 
+  labs(title = "Median household income, 2016-2020 ACS", 
+       subtitle = "Counties in New Jersey", 
+       x = "ACS estimate", 
+       y = "") + 
+  theme_minimal(base_size = 18) + 
+  scale_x_continuous(labels = dollar_format(scale = 0.001, 
+                                            suffix = "K"))
+```
+
+
+]
+
+---
+
+
+```r
+nj_income_bar
+```
+
+![](index_files/figure-html/nj-income-bar-show-1.png)&lt;!-- --&gt;
+
+
+---
+
+## Problem: which county has the highest income in New Jersey?
+
+* The chart suggests that Hunterdon County has the highest income in the state, but Morris and Somerset Counties are well within Hunterdon's margin of error
+
+
+```r
+nj_income %&gt;%
+  arrange(desc(estimate)) %&gt;%
+  head(3)
+```
+
+```
+## # A tibble: 3 × 5
+##   GEOID NAME      variable   estimate   moe
+##   &lt;chr&gt; &lt;chr&gt;     &lt;chr&gt;         &lt;dbl&gt; &lt;dbl&gt;
+## 1 34019 Hunterdon B19013_001   117858  4348
+## 2 34027 Morris    B19013_001   117298  2241
+## 3 34035 Somerset  B19013_001   116510  2194
+```
+
+* How to visualize uncertainty in an intuitive way?
+
+---
+
+## Visualizing margins of error
+
+
+```r
+nj_income_errorbar &lt;- ggplot(nj_income, 
+       aes(x = estimate, 
+           y = reorder(NAME, estimate))) + 
+* geom_errorbar(aes(xmin = estimate - moe, xmax = estimate + moe),
+*               width = 0.5, size = 0.5) +
+* geom_point(color = "navy", size = 3) +
+  labs(title = "Median household income, 2016-2020 ACS", 
+       subtitle = "Counties in New Jersey", 
+       x = "ACS estimate", 
+       y = "",
+*      caption = "Error bars reflect the margin of error around the ACS estimate") +
+  theme_minimal(base_size = 18) + 
+  scale_x_continuous(labels = dollar_format(scale = 0.001, 
+                                            suffix = "K"))
+```
+
+
+---
+
+
+```r
+nj_income_errorbar
+```
+
+![](index_files/figure-html/unnamed-chunk-3-1.png)&lt;!-- --&gt;
+
+---
+class: middle, center, inverse
+
+## Example #2: building population pyramids
+
+
+---
+
+## Identifying relevant data
+
+* The ACS Data Profile and ACS Subject Tables will commonly include pre-aggregated versions of popular statistics, helping analysts avoid doing the aggregations on their own
+
+
+```r
+subject &lt;- load_variables(2020, "acs5/subject")
+```
+
+---
+
+## Preparing the data request
+
+
+```r
+cohort_names &lt;- c("0-4", "5-9", "10-14", "15-19",
+                  "20-24", "25-29", "30-34", "35-39",
+                  "40-44", "45-49", "50-54", "55-59",
+                  "60-64", "65-69", "70-74", "75-79",
+                  "80-84", "85+")
+
+male_vars &lt;- 2:19 %&gt;%
+  str_pad(2, "left", "0") %&gt;%
+  paste0("S0101_C03_0", .) %&gt;%
+  set_names(cohort_names)
+
+female_vars &lt;- 2:19 %&gt;%
+  str_pad(2, "left", "0") %&gt;%
+  paste0("S0101_C05_0", .) %&gt;%
+  set_names(cohort_names)
+```
+
+---
+
+## Assembling the data
+
+
+```r
+male_data &lt;- get_acs(
+  geography = "county",
+  variables = male_vars,
+  state = "MI",
+  county = "Washtenaw",
+  year = 2020
+) %&gt;%
+  mutate(sex = "Male",
+         estimate = estimate * -1)
+
+female_data &lt;- get_acs(
+  geography = "county",
+  variables = female_vars,
+  state = "MI",
+  county = "Washtenaw",
+  year = 2020
+) %&gt;%
+  mutate(sex = "Female")
+
+pyramid_data &lt;- bind_rows(male_data, female_data) %&gt;%
+* mutate(variable = factor(variable, levels = cohort_names))
+```
+
+---
+
+## Designing the visualization
+
+
+```r
+washtenaw_pyramid &lt;- ggplot(pyramid_data, 
+                            aes(x = estimate, y = variable, 
+                                fill = sex)) + 
+  geom_col(width = 0.95, alpha = 0.75) + 
+  theme_minimal(base_size = 18) + 
+  scale_x_continuous(labels = function(x) paste0(abs(x / 1000), "k")) + 
+  scale_fill_manual(values = c("#00274C", "#FFCB05")) + 
+  labs(x = "", 
+       y = "ACS estimate", 
+       title = "Population structure in Washtenaw County, Michigan", 
+       fill = "", 
+       caption = "Data source: 2016-2020 ACS &amp; tidycensus R package")
+```
+
+---
+
+
+```r
+washtenaw_pyramid
+```
+
+![](index_files/figure-html/washtenaw-pyramid-show-1.png)&lt;!-- --&gt;
+
+---
+class: middle, center, inverse
+
+## Example #3: Mapping ACS data
+
+---
+
+## Review: mapping Census data
+
+* [In last week's workshop](https://walker-data.com/umich-workshop-2022/mapping-census-data/#42), participants learned how to make maps of decennial Census data with a focus on the __tmap__ R package
+
+* __tidycensus__ functions return pre-joined geometry and Census attribute data with the argument `geometry = TRUE`, helping you map data faster
+
+* `geometry = TRUE` works with `get_acs()`!
+
+---
+
+## Example: using `geometry = TRUE` with `get_acs()`
+
+
+```r
+orleans_income &lt;- get_acs(
+  geography = "tract",
+  variables = "B19013_001",
+  state = "LA",
+  county = "Orleans",
+  geometry = TRUE
+)
+```
+
+---
+
+
+```r
+orleans_income
+```
+
+```
+## Simple feature collection with 177 features and 5 fields
+## Geometry type: MULTIPOLYGON
+## Dimension:     XY
+## Bounding box:  xmin: -90.14007 ymin: 29.86666 xmax: -89.62552 ymax: 30.19866
+## Geodetic CRS:  NAD83
+## First 10 features:
+##          GEOID                                          NAME   variable
+## 1  22071001722 Census Tract 17.22, Orleans Parish, Louisiana B19013_001
+## 2  22071000701  Census Tract 7.01, Orleans Parish, Louisiana B19013_001
+## 3  22071002900    Census Tract 29, Orleans Parish, Louisiana B19013_001
+## 4  22071013500   Census Tract 135, Orleans Parish, Louisiana B19013_001
+## 5  22071001744 Census Tract 17.44, Orleans Parish, Louisiana B19013_001
+## 6  22071002800    Census Tract 28, Orleans Parish, Louisiana B19013_001
+## 7  22071007606 Census Tract 76.06, Orleans Parish, Louisiana B19013_001
+## 8  22071002501 Census Tract 25.01, Orleans Parish, Louisiana B19013_001
+## 9  22071014500   Census Tract 145, Orleans Parish, Louisiana B19013_001
+## 10 22071002200    Census Tract 22, Orleans Parish, Louisiana B19013_001
+##    estimate   moe                       geometry
+## 1     24857  6098 MULTIPOLYGON (((-90.014 30....
+## 2     25793  3518 MULTIPOLYGON (((-90.0274 29...
+## 3     19892  2571 MULTIPOLYGON (((-90.06466 2...
+## 4     55614  9050 MULTIPOLYGON (((-90.07065 2...
+## 5     20153  5142 MULTIPOLYGON (((-89.99692 3...
+## 6     14286  4815 MULTIPOLYGON (((-90.07155 2...
+## 7     73929  8707 MULTIPOLYGON (((-90.12235 3...
+## 8     46250 13854 MULTIPOLYGON (((-90.06152 3...
+## 9        NA    NA MULTIPOLYGON (((-90.10029 2...
+## 10    18413  5748 MULTIPOLYGON (((-90.05221 2...
+```
+
+---
+
+## Example: mapping with __ggplot2__
+
+.pull-left[
+
+* The `geom_sf()` function in __ggplot2__ can be used to quickly make exploratory maps
+
+* For ACS data, specify `aes(fill = estimate)` to produce a choropleth map
+
+]
+
+.pull-right[
+
+
+
+```r
+ggplot(orleans_income, aes(fill = estimate)) + 
+  geom_sf() 
+```
+
+![](index_files/figure-html/orleans-income-first-1.png)&lt;!-- --&gt;
+
+]
+
+
+---
+
+## Customizing colors
+
+.pull-left[
+
+* A wide range of color palettes are available with the `scale_fill_*()` family of functions
+
+* The viridis color palettes (available with `scale_fill_viridis_c()` for continuous versions) offer a series of colorblind and print-friendly palettes for mapping
+
+]
+
+.pull-right[
+
+
+```r
+ggplot(orleans_income, aes(fill = estimate)) + 
+  geom_sf() + 
+  scale_fill_viridis_c(option = "mako")
+```
+
+![](index_files/figure-html/orleans-income-show-1.png)&lt;!-- --&gt;
+
+
+]
+
+
+---
+
+## Refining your cartography
+
+.pull-left[
+
+* [As discussed in the previous workshop](https://walker-data.com/umich-workshop-2022/mapping-census-data/#82), water areas like New Orleans will look best when water area is removed
+
+* The `erase_water()` function in the __tigris__ package handles this; use the argument `cb = FALSE` when fetching ACS data to avoid sliver polygons
+
+]
+
+.pull-right[
+
+
+```r
+library(tigris)
+library(sf)
+
+orleans_erase &lt;- get_acs(
+  geography = "tract",
+  variables = "B19013_001",
+  state = "LA",
+  county = "Orleans",
+  geometry = TRUE,
+* cb = FALSE
+) %&gt;%
+* st_transform(26982) %&gt;%
+* erase_water(area_threshold = 0.99)
+```
+
+
+]
+
+---
+
+
+```r
+ggplot(orleans_erase, aes(fill = estimate)) + 
+  geom_sf() + 
+  scale_fill_viridis_c(option = "mako")
+```
+
+![](index_files/figure-html/orleans-erase-show-1.png)&lt;!-- --&gt;
+
+---
+
+## Adding a basemap
+
+* The easiest way to add a basemap to a __ggplot2__ map is with `annotation_map_tile()` in the __ggspatial__ package
+
+
+```r
+library(ggspatial)
+
+final_map &lt;- ggplot(orleans_erase, aes(fill = estimate)) + 
+* annotation_map_tile(type = "cartolight", zoom = 11) +
+  theme_void(base_size = 20) + 
+  geom_sf(alpha = 0.6, lwd = 0.1) + 
+  scale_fill_viridis_c(option = "mako", labels = label_dollar()) + 
+  labs(title = "Median household income, Orleans Parish LA",
+       subtitle = "2016-2020 ACS estimates",
+       caption = "Tile source: CARTO / OpenStreetMap contributors",
+       fill = "ACS estimate  ")
+```
+
+---
+
+
+```r
+final_map
+```
+
+![](index_files/figure-html/final-map-show-1.png)&lt;!-- --&gt;
+
+
+---
+
+## Part 2 exercises
+
+1. Try re-creating one of the three charts presented in this section with a different state and/or county.  
+
+2. Customize your chart with different colors or styles; [ggplot2 documentation on themes is found here](https://ggplot2.tidyverse.org/reference/ggtheme.html).
+
+---
+class: middle, center, inverse
+
+## Part 3: margins of error and time-series analysis
+
+---
+
+## Margins of error in the 2016-2020 ACS
+
+* As discussed earlier, __tidycensus__ will always return the margin of error for an estimate when applicable
+
+* Due to data collection issues influenced by the COVID-19 pandemic, the 2020 ACS had a lower response rate than in previous years
+
+* This means that margins of error are larger in the 2016-2020 ACS than in previous datasets
+
+---
+
+## Comparing margins of error
+
+&lt;img src=img/margins_of_error.png style = "width: 700px"&gt;
+
+---
+
+## Modifying the returned margin of error
+
+* By default, margins of error are found in the `moe` column; in wide-form data, MOEs are found in columns that end with `M`
+
+* The `moe_level` parameter controls the confidence level of the MOE; choose `90` (the default), `95`, or `99`
+
+---
+
+## Margins of error for small geographies
+
+.pull-left[
+
+* For small geographies like Census tracts or block groups, margins of error may be proportionally large for small populations
+
+* Example: granular population age bands by sex for a Census tract in Salt Lake County, Utah
+
+]
+
+
+.pull-right[
+
+
+```r
+vars &lt;- paste0("B01001_0", c(20:25, 44:49))
+salt_lake &lt;- get_acs(
+  geography = "tract",
+  variables = vars,
+  state = "Utah",
+  county = "Salt Lake",
+  year = 2019
+)
+example_tract &lt;- salt_lake %&gt;%
+  filter(GEOID == "49035100100")
+```
+
+]
+
+---
+
+## Using margin of error functions in __tidycensus__
+
+* tidycensus includes helper functions for calculating derives margins of error based on Census-supplied formulas.  These functions include `moe_sum()`, `moe_product()`, `moe_ratio()`, and `moe_prop()`
+
+Example: 
+
+
+```r
+moe_prop(25, 100, 5, 3)
+```
+
+```
+## [1] 0.0494343
+```
+
+---
+
+## Calculating derived MOEs tidyverse-style
+
+* `moe_sum()` is designed to work within a `group_by() %&gt;% summarize()` pipeline, calculating derived margins of error along with rolled-up estimates
+
+
+```r
+salt_lake_grouped &lt;- salt_lake %&gt;%
+  mutate(sex = case_when(
+    str_sub(variable, start = -2) &lt; "26" ~ "Male",
+    TRUE ~ "Female"
+  )) %&gt;%
+  group_by(GEOID, sex) %&gt;%
+  summarize(sum_est = sum(estimate), 
+            sum_moe = moe_sum(moe, estimate))
+```
+
+---
+
+
+```r
+salt_lake_grouped
+```
+
+```
+## # A tibble: 424 × 4
+## # Groups:   GEOID [212]
+##    GEOID       sex    sum_est sum_moe
+##    &lt;chr&gt;       &lt;chr&gt;    &lt;dbl&gt;   &lt;dbl&gt;
+##  1 49035100100 Female      55    30.9
+##  2 49035100100 Male        83    39.2
+##  3 49035100200 Female     167    57.5
+##  4 49035100200 Male       153    50.9
+##  5 49035100306 Female     273   109. 
+##  6 49035100306 Male       225    90.3
+##  7 49035100307 Female     188    70.2
+##  8 49035100307 Male       117    64.5
+##  9 49035100308 Female     164    98.7
+## 10 49035100308 Male       129    77.9
+## # … with 414 more rows
+```
+
+---
+
+## A note from Census on derived MOEs
+
+* A note of caution [from the US Census Bureau](https://www2.census.gov/programs-surveys/acs/tech_docs/statistical_testing/2019_Instructions_for_Stat_Testing_ACS.pdf?): 
+
+&gt; All [derived MOE methods] are approximations and users should be cautious in using them. This is because these methods do not consider the correlation or covariance between the basic estimates. They may be overestimates or underestimates of the derived estimate’s standard error depending on whether the two basic estimates are highly correlated in either the positive or negative direction. As a result, the approximated standard error may not match direct calculations of standard errors or calculations obtained through other methods.
+
+
+---
+class: middle, center, inverse
+
+## Time-series analysis with the ACS
+
+---
+
+## Time-series and the ACS: some notes
+
+* 5-year ACS data represent _overlapping survey years_, meaning that direct comparison between overlapping datasets is not typically recommended
+
+* The Census Bureau recommends comparing non-overlapping years in the 5-year ACS
+
+* For 2016-2020 data, available 5-year intervals for comparison are 2006-2010 and 2011-2015
+
+---
+
+## Getting data for multiple years
+
+* The `map_dfr()` function in the __purrr__ package (a member of the tidyverse) is a great way to iterate over a sequence of years and return the combined result
+
+
+```r
+years &lt;- c(2010, 2015, 2020)
+
+nebraska_series &lt;- map_dfr(years, function(year) {
+  get_acs(
+    geography = "county",
+    state = "NE",
+    variables = "B01002_001",
+    year = year
+  ) %&gt;%
+    mutate(year = year)
+}) %&gt;%
+  arrange(NAME)
+```
+
+---
+
+
+```r
+nebraska_series
+```
+
+```
+## # A tibble: 279 × 6
+##    GEOID NAME                      variable   estimate   moe  year
+##    &lt;chr&gt; &lt;chr&gt;                     &lt;chr&gt;         &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt;
+##  1 31001 Adams County, Nebraska    B01002_001     37.5   0.5  2010
+##  2 31001 Adams County, Nebraska    B01002_001     37.8   0.7  2015
+##  3 31001 Adams County, Nebraska    B01002_001     38     0.7  2020
+##  4 31003 Antelope County, Nebraska B01002_001     45.2   0.2  2010
+##  5 31003 Antelope County, Nebraska B01002_001     46.5   0.4  2015
+##  6 31003 Antelope County, Nebraska B01002_001     44.8   0.2  2020
+##  7 31005 Arthur County, Nebraska   B01002_001     39.4   5.1  2010
+##  8 31005 Arthur County, Nebraska   B01002_001     39.9   6.1  2015
+##  9 31005 Arthur County, Nebraska   B01002_001     48     5.6  2020
+## 10 31007 Banner County, Nebraska   B01002_001     46.4   4.5  2010
+## # … with 269 more rows
+```
+
+
+---
+
+## Caution: inconsistent variable names across years
+
+* The ACS Data Profile and Subject Tables are not guaranteed to have the same variable names across years, and not all Detailed Tables variables are available in every year
+
+* For example: try swapping in `"DP02_0068P"` for the variable in the example above (representing % of the population age 25 and up with a bachelor's degree in 2020)
+
+---
+
+## New feature: comparison profile tables
+
+.pull-left[
+
+* In the development version of __tidycensus__, I _just added_ support for the ACS Comparison Profile
+
+* The Comparison Profile includes data on the current 5-year ACS and the 5-year ACS that ends 5 years prior to help with time-series comparisons  
+
+]
+
+.pull-right[
+
+
+```r
+ak_income_compare &lt;- get_acs(
+  geography = "county",
+  variables = c(
+    income15 = "CP03_2015_062",
+    income20 = "CP03_2020_062"
+  ),
+  state = "AK",
+  year = 2020
+)
+```
+
+
+]
+
+---
+
+
+```r
+ak_income_compare
+```
+
+```
+## # A tibble: 34 × 4
+##    GEOID NAME                                 variable estimate
+##    &lt;chr&gt; &lt;chr&gt;                                &lt;chr&gt;       &lt;dbl&gt;
+##  1 02016 Aleutians West Census Area, Alaska   income15    92500
+##  2 02016 Aleutians West Census Area, Alaska   income20    87443
+##  3 02020 Anchorage Municipality, Alaska       income15    85534
+##  4 02020 Anchorage Municipality, Alaska       income20    84813
+##  5 02050 Bethel Census Area, Alaska           income15    55692
+##  6 02050 Bethel Census Area, Alaska           income20    54400
+##  7 02090 Fairbanks North Star Borough, Alaska income15    77590
+##  8 02090 Fairbanks North Star Borough, Alaska income20    76464
+##  9 02110 Juneau City and Borough, Alaska      income15    93836
+## 10 02110 Juneau City and Borough, Alaska      income20    88077
+## # … with 24 more rows
+```
+
+---
+
+## Geography and making comparisons
+
+* Data in the Comparison Profile tables is only available down to the county level ([though counties can change from ACS to ACS!](https://walker-data.com/umich-workshop-2022/intro-2020-census/#63))
+
+* Comparing _neighborhood-level_ change across ACS datasets introduces additional challenges with the 2016-2020 data, as Census tract and block group boundaries differ from previous years
+
+---
+
+## New boundaries in the 2016-2020 data
+
+* Locations with significant population growth (e.g. suburban Collin County, Texas) will have Census tracts / block groups with large populations subdivided in the 2020 Census
+
+* Example: total population by Census tract in Collin County in the 2015-2019 ACS (on the left) and the 2016-2020 ACS (on the right)
+
+---
+
+![](index_files/figure-html/collin-compare-1.png)&lt;!-- --&gt;
+
+---
+class: middle, center, inverse
+
+## Discussion: interpolating data between different sets of Census geographies
+
+---
+
+## Data setup
+
+* Let's grab data on the population working from home by Census tract in Maricopa County, AZ
+
+* Use a projected coordinate reference system to speed things up!
+
+
+```r
+library(sf)
+
+wfh_15 &lt;- get_acs(geography = "tract", variables = "B08006_017", year = 2015,
+                  state = "AZ", county = "Maricopa", geometry = TRUE) %&gt;%
+  st_transform(26950)
+
+wfh_20 &lt;- get_acs(geography = "tract", variables = "B08006_017", year = 2020,
+                  state = "AZ", county = "Maricopa", geometry = TRUE) %&gt;%
+  st_transform(26950)
+```
+
+---
+
+## Method 1: area-weighted interpolation
+
+.pull-left[
+
+* _Interpolating_ data between sets of boundaries involves the use of _weights_ to re-distribute data from one geography to another
+
+* A common method is _area-weighted interpolation_, which allocates information from one geography to another weighted by the area of overlap
+
+* Typically more accurate when going _backward_, as many new tracts will "roll up" within parent tracts from a previous Census (though not always)
+
+]
+
+.pull-right[
+
+
+```r
+library(sf)
+
+wfh_20_to_15 &lt;- wfh_20 %&gt;%
+  select(estimate) %&gt;%
+  st_interpolate_aw(to = wfh_15, extensive = TRUE)
+```
+
+
+]
+
+---
+
+## Method 1: area-weighted interpolation
+
+* Let's compare the two maps:
+
+
+```r
+library(mapview)
+library(leafsync)
+
+m20a &lt;- mapview(wfh_20, zcol = "estimate", layer.name = "2020 geographies")
+m15a &lt;- mapview(wfh_20_to_15, zcol = "estimate", layer.name = "2015 geographies")
+
+sync(m20a, m15a)
+```
+
+
+---
+
+## Method 2: population-weighted interpolation
+
+* If you need to go _forward_, area-weighted interpolation may be very inaccurate as it can incorrectly allocate large values to low-density / empty areas
+
+* _Population-weighted interpolation_ will instead use an underlying dataset explaining the population distribution as weights
+
+* Example: population-weighted interpolation using block population weights from the 2020 Census
+
+---
+
+## A function for population-weighted interpolation
+
+.pull-left[
+
+* Population-weighted interpolation is more complicated than would fit in a slide deck, so I've written a function named `interpolate_pw()` found in the companion script `population_weighted_interpolation.R`
+
+* Let's give it a try: 
+
+]
+
+.pull-right[
+
+
+```r
+# source("population_weighted_interpolation.R")
+library(tigris)
+options(tigris_use_cache = TRUE)
+
+maricopa_blocks &lt;- blocks(
+  "AZ", 
+  "Maricopa", 
+  year = 2020
+)
+
+wfh_15_to_20 &lt;- interpolate_pw(
+  from = wfh_15,
+  to = wfh_20,
+  weights = maricopa_blocks,
+  weight_column = "POP20",
+  crs = 26950,
+  extensive = TRUE
+)
+```
+
+
+]
+
+---
+
+## Evaluating the result
+
+* Let's compare the two maps:
+
+
+```r
+m15b &lt;- mapview(wfh_15, zcol = "estimate", layer.name = "2015 geographies")
+m20b &lt;- mapview(wfh_15_to_20, zcol = "estimate", layer.name = "2020 geographies")
+
+sync(m15b, m20b)
+```
+
+---
+
+## Concluding thoughts
+
+* While this workflow uses population-weighted interpolation, [differential privacy in the 2020 Census may introduce some inaccuracies](https://walker-data.com/umich-workshop-2022/intro-2020-census/#17)
+
+* NHGIS uses a methodology that incorporates land cover data for adjusting data between Census years; [read through their methodology here](https://www.nhgis.org/2000-block-data-standardized-2010-geography)
+
+---
+class: middle, center, inverse
+
+## Thank you!
+    </textarea>
+<style data-target="print-only">@media screen {.remark-slide-container{display:block;}.remark-slide-scaler{box-shadow:none;}}</style>
+<script src="https://remarkjs.com/downloads/remark-latest.min.js"></script>
+<script>var slideshow = remark.create({
+"highlightStyle": "github",
+"highlightLines": true,
+"countIncrementalSlides": false,
+"ratio": "16:9"
+});
+if (window.HTMLWidgets) slideshow.on('afterShowSlide', function (slide) {
+  window.dispatchEvent(new Event('resize'));
+});
+(function(d) {
+  var s = d.createElement("style"), r = d.querySelector(".remark-slide-scaler");
+  if (!r) return;
+  s.type = "text/css"; s.innerHTML = "@page {size: " + r.style.width + " " + r.style.height +"; }";
+  d.head.appendChild(s);
+})(document);
+
+(function(d) {
+  var el = d.getElementsByClassName("remark-slides-area");
+  if (!el) return;
+  var slide, slides = slideshow.getSlides(), els = el[0].children;
+  for (var i = 1; i < slides.length; i++) {
+    slide = slides[i];
+    if (slide.properties.continued === "true" || slide.properties.count === "false") {
+      els[i - 1].className += ' has-continuation';
+    }
+  }
+  var s = d.createElement("style");
+  s.type = "text/css"; s.innerHTML = "@media print { .has-continuation { display: none; } }";
+  d.head.appendChild(s);
+})(document);
+// delete the temporary CSS (for displaying all slides initially) when the user
+// starts to view slides
+(function() {
+  var deleted = false;
+  slideshow.on('beforeShowSlide', function(slide) {
+    if (deleted) return;
+    var sheets = document.styleSheets, node;
+    for (var i = 0; i < sheets.length; i++) {
+      node = sheets[i].ownerNode;
+      if (node.dataset["target"] !== "print-only") continue;
+      node.parentNode.removeChild(node);
+    }
+    deleted = true;
+  });
+})();
+(function() {
+  "use strict"
+  // Replace <script> tags in slides area to make them executable
+  var scripts = document.querySelectorAll(
+    '.remark-slides-area .remark-slide-container script'
+  );
+  if (!scripts.length) return;
+  for (var i = 0; i < scripts.length; i++) {
+    var s = document.createElement('script');
+    var code = document.createTextNode(scripts[i].textContent);
+    s.appendChild(code);
+    var scriptAttrs = scripts[i].attributes;
+    for (var j = 0; j < scriptAttrs.length; j++) {
+      s.setAttribute(scriptAttrs[j].name, scriptAttrs[j].value);
+    }
+    scripts[i].parentElement.replaceChild(s, scripts[i]);
+  }
+})();
+(function() {
+  var links = document.getElementsByTagName('a');
+  for (var i = 0; i < links.length; i++) {
+    if (/^(https?:)?\/\//.test(links[i].getAttribute('href'))) {
+      links[i].target = '_blank';
+    }
+  }
+})();
+// adds .remark-code-has-line-highlighted class to <pre> parent elements
+// of code chunks containing highlighted lines with class .remark-code-line-highlighted
+(function(d) {
+  const hlines = d.querySelectorAll('.remark-code-line-highlighted');
+  const preParents = [];
+  const findPreParent = function(line, p = 0) {
+    if (p > 1) return null; // traverse up no further than grandparent
+    const el = line.parentElement;
+    return el.tagName === "PRE" ? el : findPreParent(el, ++p);
+  };
+
+  for (let line of hlines) {
+    let pre = findPreParent(line);
+    if (pre && !preParents.includes(pre)) preParents.push(pre);
+  }
+  preParents.forEach(p => p.classList.add("remark-code-has-line-highlighted"));
+})(document);</script>
+
+<script>
+slideshow._releaseMath = function(el) {
+  var i, text, code, codes = el.getElementsByTagName('code');
+  for (i = 0; i < codes.length;) {
+    code = codes[i];
+    if (code.parentNode.tagName !== 'PRE' && code.childElementCount === 0) {
+      text = code.textContent;
+      if (/^\\\((.|\s)+\\\)$/.test(text) || /^\\\[(.|\s)+\\\]$/.test(text) ||
+          /^\$\$(.|\s)+\$\$$/.test(text) ||
+          /^\\begin\{([^}]+)\}(.|\s)+\\end\{[^}]+\}$/.test(text)) {
+        code.outerHTML = code.innerHTML;  // remove <code></code>
+        continue;
+      }
+    }
+    i++;
+  }
+};
+slideshow._releaseMath(document);
+</script>
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+(function () {
+  var script = document.createElement('script');
+  script.type = 'text/javascript';
+  script.src  = 'https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-MML-AM_CHTML';
+  if (location.protocol !== 'file:' && /^https?:/.test(script.src))
+    script.src  = script.src.replace(/^https?:/, '');
+  document.getElementsByTagName('head')[0].appendChild(script);
+})();
+</script>
+  </body>
+</html>
