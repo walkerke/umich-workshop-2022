@@ -1,5 +1,5 @@
 ## ----install-packages---------------------------------------------------
-## install.packages(c("tidycensus", "tidyverse", "mapview", "leafsync"))
+## install.packages(c("tidycensus", "tidyverse", "mapview", "leafsync", "ggspatial"))
 ## # For brand-new features:
 ## install.packages("remotes")
 ## remotes::install_github("walkerke/tidycensus")

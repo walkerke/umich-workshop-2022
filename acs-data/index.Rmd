@@ -91,7 +91,7 @@ style_xaringan(
 * Packages required for today's workshop:
 
 ```{r install-packages, eval = FALSE}
-install.packages(c("tidycensus", "tidyverse", "mapview", "leafsync"))
+install.packages(c("tidycensus", "tidyverse", "mapview", "leafsync", "ggspatial"))
 # For brand-new features:
 install.packages("remotes")
 remotes::install_github("walkerke/tidycensus")
