@@ -9,6 +9,8 @@ Workshop slides are available from the links below:
 
 * March 18, 2022: [Mapping 2020 US Census Data in R](https://walker-data.com/umich-workshop-2022/mapping-census-data/#1)
 
+* March 25, 2022: [Using the new 2016-2020 ACS estimates in R](https://walker-data.com/umich-workshop-2022/acs-data/#1)
+
 
 To use the workshop materials, you should do one of the following: 
 
