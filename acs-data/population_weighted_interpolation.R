@@ -54,7 +54,7 @@ interpolate_pw <- function(from,
     dplyr::ungroup() %>%
     dplyr::distinct(intersection_id, .keep_all = TRUE) %>%
     dplyr::mutate(weight_coef = intersection_value / total) %>%
-    dplyr::select(!!from_id_sym, !!to_id_sym, weight_coef))
+    dplyr::select(!!from_id_sym, !!to_id_sym, intersection_value, weight_coef))
   
   # Merge the weights to the from data and interpolate any numeric columns in from to to
   if (extensive) {
@@ -71,13 +71,12 @@ interpolate_pw <- function(from,
     interpolated <- from %>%
       sf::st_drop_geometry() %>%
       dplyr::left_join(intersections, by = from_id) %>%
-      dplyr::mutate(dplyr::across(tidyselect::where(is.numeric), 
-                                  .fns = ~(.x * weight_coef))) %>%
-      dplyr::select(-weight_coef) %>%
       dplyr::group_by(!!to_id_sym) %>%
-      dplyr::summarize(dplyr::across(tidyselect::where(is.numeric), 
-                                     .fns = ~mean(.x, na.rm = TRUE))) %>%
-      dplyr::rename_with(!!to_id_sym, ~stringr::str_remove(.x, "_to"))
+      dplyr::summarize(dplyr::across(tidyselect:::where(is.numeric), 
+                                     .fns = ~weighted.mean(.x, 
+                                                           w = intersection_value,
+                                                           na.rm = TRUE))) %>%
+      dplyr::select(-intersection_value, -weight_coef)
   }
   
   # Merge back to the original "to" shapes
