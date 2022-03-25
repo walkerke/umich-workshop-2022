@@ -20,7 +20,8 @@ To use the workshop materials, you should do one of the following:
 
 ```r
 pkgs <- c("tidycensus", "tidyverse", "ggridges", "geofacet"
-"terra", "tmap", "mapview", "rosm", "crsuggest")
+"terra", "tmap", "mapview", "rosm", "crsuggest", "ggspatial", "mapview", 
+"leafsync")
 
 install.packages(pkgs)
 ```
