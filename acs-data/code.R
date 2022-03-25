@@ -371,25 +371,23 @@ ak_income_compare
 
 
 ## ----collin-compare, echo = FALSE-----------------------------------------------------
-library(patchwork)
-
-ts_maps <- purrr::map_dfr(2019:2020, ~{
-  dat <- get_acs(
-    geography = "tract",
-    variables = "B01001_001",
-    state = "TX",
-    county = "Collin County",
-    geometry = TRUE,
-    year = .x
-  ) %>%
-    mutate(year = .x)
-})
-
-ggplot(ts_maps, aes(fill = estimate)) + 
-  geom_sf(lwd = 0.1) + 
-  theme_void(base_size = 18) + 
-  scale_fill_viridis_c() + 
-  facet_wrap(~year)
+# ts_maps <- purrr::map_dfr(2019:2020, ~{
+#   dat <- get_acs(
+#     geography = "tract",
+#     variables = "B01001_001",
+#     state = "TX",
+#     county = "Collin County",
+#     geometry = TRUE,
+#     year = .x
+#   ) %>%
+#     mutate(year = .x)
+# })
+# 
+# ggplot(ts_maps, aes(fill = estimate)) + 
+#   geom_sf(lwd = 0.1) + 
+#   theme_void(base_size = 18) + 
+#   scale_fill_viridis_c() + 
+#   facet_wrap(~year)
 
 
 
