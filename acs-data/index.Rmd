@@ -507,7 +507,7 @@ nj_income_bar
 
 * The chart suggests that Hunterdon County has the highest income in the state, but Morris and Somerset Counties are well within Hunterdon's margin of error
 
-```{r}
+```{r head-nj-income}
 nj_income %>%
   arrange(desc(estimate)) %>%
   head(3)
@@ -519,7 +519,7 @@ nj_income %>%
 
 ## Visualizing margins of error
 
-```{r}
+```{r nj-income-errorbar}
 nj_income_errorbar <- ggplot(nj_income, 
        aes(x = estimate, 
            y = reorder(NAME, estimate))) + 
@@ -539,7 +539,7 @@ nj_income_errorbar <- ggplot(nj_income,
 
 ---
 
-```{r}
+```{r nj-income-errorbar-show}
 nj_income_errorbar
 ```
 
@@ -555,7 +555,7 @@ class: middle, center, inverse
 
 * The ACS Data Profile and ACS Subject Tables will commonly include pre-aggregated versions of popular statistics, helping analysts avoid doing the aggregations on their own
 
-```{r}
+```{r load-subject}
 subject <- load_variables(2020, "acs5/subject")
 ```
 
@@ -1146,7 +1146,7 @@ wfh_15_to_20 <- interpolate_pw(
 
 * Let's compare the two maps:
 
-```{r, eval = FALSE}
+```{r map-pw, eval = FALSE}
 m15b <- mapview(wfh_15, zcol = "estimate", layer.name = "2015 geographies")
 m20b <- mapview(wfh_15_to_20, zcol = "estimate", layer.name = "2020 geographies")
 
