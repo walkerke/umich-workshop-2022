@@ -28,8 +28,9 @@ born_in_mexico
 ## ----median-age-----------------------------------------------------------------------
 median_age <- get_acs(
   geography = "state",
-  variables = "B01002_001",
-  year = 2020 #<<
+  variables = c("B01002_001", "B01003_001"),
+  year = 2020, 
+  output = "wide"
 )
 
 
@@ -69,6 +70,8 @@ median_home_value <- get_acs(
   variables = "B25077_001",
   year = 2020
 )
+
+acs_vars <- load_variables(2020, "acs5")
 
 
 ## ----get-top-10-percent---------------------------------------------------------------
@@ -121,7 +124,8 @@ nj_income <- get_acs(
   geography = "county",
   variables = "B19013_001",
   state = "NJ",
-  year = 2020
+  year = 2020,
+  moe_level = 99
 ) %>%
   mutate(NAME = str_remove(NAME, 
                            " County, New Jersey"))
@@ -136,7 +140,7 @@ nj_income_bar <- ggplot(nj_income,
        subtitle = "Counties in New Jersey", 
        x = "ACS estimate", 
        y = "") + 
-  theme_minimal(base_size = 18) + 
+  theme_minimal(base_size = 14) + 
   scale_x_continuous(labels = dollar_format(scale = 0.001, 
                                             suffix = "K"))
 
@@ -152,7 +156,7 @@ nj_income %>%
 
 
 ## ----nj-income-errorbar---------------------------------------------------------------
-nj_income_errorbar <- ggplot(nj_income, 
+ggplot(nj_income, 
        aes(x = estimate, 
            y = reorder(NAME, estimate))) + 
   geom_errorbar(aes(xmin = estimate - moe, xmax = estimate + moe), #<<
@@ -163,7 +167,7 @@ nj_income_errorbar <- ggplot(nj_income,
        x = "ACS estimate", 
        y = "",
        caption = "Error bars reflect the margin of error around the ACS estimate") + #<< 
-  theme_minimal(base_size = 18) + 
+  theme_minimal(base_size = 14) + 
   scale_x_continuous(labels = dollar_format(scale = 0.001, 
                                             suffix = "K"))
 
@@ -224,7 +228,7 @@ washtenaw_pyramid <- ggplot(pyramid_data,
                             aes(x = estimate, y = variable, 
                                 fill = sex)) + 
   geom_col(width = 0.95, alpha = 0.75) + 
-  theme_minimal(base_size = 18) + 
+  theme_minimal(base_size = 12) + 
   scale_x_continuous(labels = function(x) paste0(abs(x / 1000), "k")) + 
   scale_fill_manual(values = c("#00274C", "#FFCB05")) + 
   labs(x = "", 
@@ -244,6 +248,7 @@ orleans_income <- get_acs(
   variables = "B19013_001",
   state = "LA",
   county = "Orleans",
+  year = 2020,
   geometry = TRUE
 )
 
@@ -260,7 +265,8 @@ ggplot(orleans_income, aes(fill = estimate)) +
 ## ----orleans-income-show--------------------------------------------------------------
 ggplot(orleans_income, aes(fill = estimate)) + 
   geom_sf() + 
-  scale_fill_viridis_c(option = "mako")
+  scale_fill_viridis_c(option = "mako") + 
+  theme_void()
 
 
 ## ----orleans-erase--------------------------------------------------------------------
@@ -273,6 +279,7 @@ orleans_erase <- get_acs(
   state = "LA",
   county = "Orleans",
   geometry = TRUE,
+  year = 2020,
   cb = FALSE #<<
 ) %>%
   st_transform(26982) %>% #<<
@@ -290,7 +297,7 @@ library(ggspatial)
 
 final_map <- ggplot(orleans_erase, aes(fill = estimate)) + 
   annotation_map_tile(type = "cartolight", zoom = 11) + #<<
-  theme_void(base_size = 20) + 
+  theme_void(base_size = 14) + 
   geom_sf(alpha = 0.6, lwd = 0.1) + 
   scale_fill_viridis_c(option = "mako", labels = label_dollar()) + 
   labs(title = "Median household income, Orleans Parish LA",
@@ -342,7 +349,7 @@ nebraska_series <- map_dfr(years, function(year) {
   get_acs(
     geography = "county",
     state = "NE",
-    variables = "B01002_001",
+    variables = "DP02_0068P",
     year = year
   ) %>%
     mutate(year = year)
@@ -385,7 +392,7 @@ ak_income_compare
 # 
 # ggplot(ts_maps, aes(fill = estimate)) + 
 #   geom_sf(lwd = 0.1) + 
-#   theme_void(base_size = 18) + 
+#   theme_void(base_size = 14) + 
 #   scale_fill_viridis_c() + 
 #   facet_wrap(~year)
 

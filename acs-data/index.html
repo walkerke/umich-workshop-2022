@@ -808,6 +808,7 @@ orleans_income &lt;- get_acs(
   variables = "B19013_001",
   state = "LA",
   county = "Orleans",
+  year = 2020,
   geometry = TRUE
 )
 ```
@@ -820,34 +821,34 @@ orleans_income
 ```
 
 ```
-## Simple feature collection with 177 features and 5 fields
+## Simple feature collection with 184 features and 5 fields
 ## Geometry type: MULTIPOLYGON
 ## Dimension:     XY
 ## Bounding box:  xmin: -90.14007 ymin: 29.86666 xmax: -89.62552 ymax: 30.19866
 ## Geodetic CRS:  NAD83
 ## First 10 features:
-##          GEOID                                          NAME   variable
-## 1  22071001722 Census Tract 17.22, Orleans Parish, Louisiana B19013_001
-## 2  22071000701  Census Tract 7.01, Orleans Parish, Louisiana B19013_001
-## 3  22071002900    Census Tract 29, Orleans Parish, Louisiana B19013_001
-## 4  22071013500   Census Tract 135, Orleans Parish, Louisiana B19013_001
-## 5  22071001744 Census Tract 17.44, Orleans Parish, Louisiana B19013_001
-## 6  22071002800    Census Tract 28, Orleans Parish, Louisiana B19013_001
-## 7  22071007606 Census Tract 76.06, Orleans Parish, Louisiana B19013_001
-## 8  22071002501 Census Tract 25.01, Orleans Parish, Louisiana B19013_001
-## 9  22071014500   Census Tract 145, Orleans Parish, Louisiana B19013_001
-## 10 22071002200    Census Tract 22, Orleans Parish, Louisiana B19013_001
+##          GEOID                                           NAME   variable
+## 1  22071003307  Census Tract 33.07, Orleans Parish, Louisiana B19013_001
+## 2  22071008400     Census Tract 84, Orleans Parish, Louisiana B19013_001
+## 3  22071009000     Census Tract 90, Orleans Parish, Louisiana B19013_001
+## 4  22071000902   Census Tract 9.02, Orleans Parish, Louisiana B19013_001
+## 5  22071009900     Census Tract 99, Orleans Parish, Louisiana B19013_001
+## 6  22071004600     Census Tract 46, Orleans Parish, Louisiana B19013_001
+## 7  22071010700    Census Tract 107, Orleans Parish, Louisiana B19013_001
+## 8  22071001301  Census Tract 13.01, Orleans Parish, Louisiana B19013_001
+## 9  22071012102 Census Tract 121.02, Orleans Parish, Louisiana B19013_001
+## 10 22071001754  Census Tract 17.54, Orleans Parish, Louisiana B19013_001
 ##    estimate   moe                       geometry
-## 1     24857  6098 MULTIPOLYGON (((-90.014 30....
-## 2     25793  3518 MULTIPOLYGON (((-90.0274 29...
-## 3     19892  2571 MULTIPOLYGON (((-90.06466 2...
-## 4     55614  9050 MULTIPOLYGON (((-90.07065 2...
-## 5     20153  5142 MULTIPOLYGON (((-89.99692 3...
-## 6     14286  4815 MULTIPOLYGON (((-90.07155 2...
-## 7     73929  8707 MULTIPOLYGON (((-90.12235 3...
-## 8     46250 13854 MULTIPOLYGON (((-90.06152 3...
-## 9        NA    NA MULTIPOLYGON (((-90.10029 2...
-## 10    18413  5748 MULTIPOLYGON (((-90.05221 2...
+## 1     14753  9772 MULTIPOLYGON (((-90.07408 3...
+## 2     42125  6372 MULTIPOLYGON (((-90.08514 2...
+## 3     78088 38392 MULTIPOLYGON (((-90.09018 2...
+## 4        NA    NA MULTIPOLYGON (((-90.01691 2...
+## 5     79798 13899 MULTIPOLYGON (((-90.10192 2...
+## 6     75246 23556 MULTIPOLYGON (((-90.10509 2...
+## 7     63250 15300 MULTIPOLYGON (((-90.10895 2...
+## 8     19464  8693 MULTIPOLYGON (((-90.04479 2...
+## 9     66000 12138 MULTIPOLYGON (((-90.12815 2...
+## 10    26439  9283 MULTIPOLYGON (((-89.99241 3...
 ```
 
 ---
@@ -928,6 +929,7 @@ orleans_erase &lt;- get_acs(
   state = "LA",
   county = "Orleans",
   geometry = TRUE,
+  year = 2020,
 * cb = FALSE
 ) %&gt;%
 * st_transform(26982) %&gt;%

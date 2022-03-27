@@ -660,6 +660,7 @@ orleans_income <- get_acs(
   variables = "B19013_001",
   state = "LA",
   county = "Orleans",
+  year = 2020,
   geometry = TRUE
 )
 ```
@@ -741,6 +742,7 @@ orleans_erase <- get_acs(
   state = "LA",
   county = "Orleans",
   geometry = TRUE,
+  year = 2020,
   cb = FALSE #<<
 ) %>%
   st_transform(26982) %>% #<<
